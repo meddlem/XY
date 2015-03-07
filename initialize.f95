@@ -9,61 +9,34 @@ contains
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: BJ
-    integer :: i, j
+    integer :: i, j, S0(L+2,L+2)
 
     BE = 0._dp ! initialze energy 
     if (size(S,1)<2) return
     
-    ! internal spins
-    do i = 2,L-1
-      do j = 2,L-1
-        BE = BE + BJ*S(i,j)*(S(i-1,j) + S(i+1,j) + S(i,j-1) + S(i,j+1))
+    ! zero padding of S
+    S0 = 0
+    S0(2:L+1,2:L+1) = S
+
+    do i = 2,L+1
+      do j = 2,L+1
+        BE = BE + BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1))
       enddo
     enddo
-
-    ! top boundary
-    do i = 2,L-1
-      BE = BE + BJ*S(1,i)*(S(1,i-1)+S(1,i+1)+S(2,i))
-    enddo
-    ! bottom boundary
-    do i = 2,L-1
-      BE = BE + BJ*S(L,i)*(S(L,i-1)+S(L,i+1)+S(L-1,i))
-    enddo
-    ! left boundary
-    do j = 2,L-1
-      BE = BE + BJ*S(j,1)*(S(j-1,1)+S(j+1,1)+S(j,2))
-    enddo
-    ! right boundary
-    do j = 2,L-1
-      BE = BE + BJ*S(j,L)*(S(j-1,L)+S(j+1,L)+S(j,L-1))
-    enddo
-
-    ! add interactions of corner spins
-    BE = BE + BJ*S(1,1)*(S(1,2)+S(2,1)) 
-    BE = BE + BJ*S(1,L)*(S(1,L-1)+S(2,L)) 
-    BE = BE + BJ*S(L,1)*(S(L,2)+S(L-1,1)) 
-    BE = BE + BJ*S(L,L)*(S(L-1,L)+S(L,L-1))
 
     BE = 0.5_dp*BE ! account for double counting of pairs
   end subroutine
 
   subroutine init_lattice(S)
     integer, intent(out) :: S(L,L)
-    integer :: i, j
     real(dp) :: u(L,L)
 
     call init_random_seed()
     call random_number(u)
     ! assign spins based on uniform random number u 
-    do i = 1,L
-      do j = 1,L
-        if (u(i,j)>0.5_dp) then
-          S(i,j) = 1
-        else
-          S(i,j) = -1
-        endif
-      enddo
-    enddo
+    
+    S = -1
+    where (u>0.5_dp) S = 1
   end subroutine 
 
   ! initialize random seed, taken from ICCP github
