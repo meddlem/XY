@@ -5,10 +5,10 @@ module initialize
   public :: init_lattice, init_energy
 
 contains
-  subroutine init_energy(BE,S,BJ)
+  subroutine init_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
-    real(dp), intent(in) :: BJ
+    real(dp), intent(in) :: h, BJ
     integer :: i, j, S0(L+2,L+2)
 
     BE = 0._dp ! initialze energy 
@@ -25,6 +25,7 @@ contains
     enddo
 
     BE = 0.5_dp*BE ! account for double counting of pairs
+    BE = BE + h*sum(S) ! add external field
   end subroutine
 
   subroutine init_lattice(S)

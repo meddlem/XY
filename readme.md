@@ -1,0 +1,3 @@
+# ISING MODEL
+
+
