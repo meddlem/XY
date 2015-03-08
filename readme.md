@@ -1,3 +1,3 @@
-# ISING MODEL
+# 2D Ising model simulation
 
 
