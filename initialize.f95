@@ -9,10 +9,13 @@ contains
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: h, BJ
-    integer :: i, j, S0(L+2,L+2)
+    integer, allocatable :: S0(:,:)
+    integer :: i, j
 
+    if (size(S,1)<2) return !check
+    
+    allocate(S0(L+2,L+2))
     BE = 0._dp ! initialze energy 
-    if (size(S,1)<2) return
     
     ! zero padding of S
     S0 = 0
@@ -26,17 +29,22 @@ contains
 
     BE = 0.5_dp*BE ! account for double counting of pairs
     BE = BE - h*sum(S) ! add external field
+    
+    deallocate(S0)
   end subroutine
 
   subroutine init_lattice(S)
     integer, intent(out) :: S(L,L)
-    real(dp) :: u(L,L)
+    real(dp), allocatable :: u(:,:)
 
+    allocate(u(L,L))
     call random_number(u)
-    ! assign spins based on uniform random number u 
+    ! assign initial spins based on uniform random number u 
     
     S = -1
     where (u>0.5_dp) S = 1
+
+    deallocate(u)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github

@@ -94,36 +94,38 @@ contains
     call system('rm xydata.dat',ret)
   end subroutine 
 
-  subroutine gnu_lattice_plot(S,plot_no)
+  subroutine gnu_lattice_plot(S,plot_no,title)
     integer, intent(in) :: S(:,:), plot_no
+    character(*), intent(in) :: title
     integer :: i, j, ret
     character(30) :: rowfmt, filename
 
     write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
+    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
     
     open(10,access = 'sequential',file = 'Sdata.dat')
     do i = 1,L
       write(10,rowfmt) (S(i,j), j=1,L) ! write spin configuration to file
     enddo
     close(10,status= 'keep')
-
-    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
     
     open(10,access = 'sequential',file = 'matplot.txt')
     ! set output terminal  
-    write(10,*) 'set term pngcairo size 640,480 enhanced font "Verdana,10"'
+    write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
     write(10,*) filename
     write(10,*) 'set border linewidth 0'
-    write(10,*) 'unset key'
-    write(10,*) 'unset colorbox'
-    write(10,*) 'unset tics'
+    !write(10,*) 'unset key'
+    !write(10,*) 'unset colorbox'
+    !write(10,*) 'unset tics'
     write(10,*) 'set lmargin screen 0.1'
     write(10,*) 'set rmargin screen 0.9'
     write(10,*) 'set tmargin screen 0.9'
     write(10,*) 'set bmargin screen 0.1'
-
-    write(10,*) 'set palette model RGB'
-    write(10,*) 'set palette defined ( 0 "red", 1 "blue" )'
+    write(10,*) 'set palette maxcolors 2'
+    write(10,*) 'set palette defined ( -1 "#000fff", 1 "#ee0000")'
+    write(10,*) 'set cbrange [-1:1]'
+    write(10,*) 'set cbtics ("+" 1, "-" -1)'
+    write(10,*) 'set title "'//TRIM(title)//'"'
 
     write(10,*) 'set pm3d map'
     write(10,*) 'splot "Sdata.dat" matrix with image'

@@ -10,6 +10,7 @@ PROG = main #program name
 #required objects: 
 OBJS =
 OBJS += constants.o
+OBJS += io.o
 OBJS += initialize.o
 OBJS += markov.o
 OBJS += plotroutines.o
@@ -26,4 +27,4 @@ main: $(OBJS)
 .PHONY: clean
 clean:
 	$(RM) $(PROG) $(OBJS) *.mod
-	$(RM) *.png
+	$(RM) *.png *.txt

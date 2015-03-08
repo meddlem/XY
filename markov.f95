@@ -10,9 +10,11 @@ contains
     integer, intent(inout) :: S(:,:)
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: BJ, h
-    integer :: i, j, x(2), S0(L+2,L+2), S_t(L,L)
+    integer, allocatable :: S0(:,:), S_t(:,:)
+    integer :: i, j, x(2) 
     real(dp) :: BF, dE_t, r
     
+    allocate(S0(L+2,L+2), S_t(L,L))
     S_t = S ! initialize trial config
     call random_spin(x)
     
@@ -20,13 +22,11 @@ contains
     i = x(1); j = x(2)
     S_t(i,j) = -S_t(i,j)
     
-    ! add zero padding
+    ! add zero padding, probably best to do outside of this module?
     S0 = 0
     S0(2:L+1,2:L+1) = S_t
     i = i+1; j = j+1 ! adjust indices accordingly 
-
-    ! you can just save the possible energy changes, boltzmann factors in &
-    ! an array, may save some computation time. could do this in init_energy
+    
     dE_t = -2._dp*BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1)) -&
       2._dp*h*S0(i,j) ! calculate change in energy
 
@@ -45,6 +45,8 @@ contains
         dE = 0._dp
       endif
     endif
+
+    deallocate(S0,S_t)
   end subroutine
 
   subroutine random_spin(x)
