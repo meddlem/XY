@@ -11,11 +11,13 @@ contains
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: BJ, h
     integer, allocatable :: S0(:,:), S_t(:,:)
-    integer :: i, j, x(2) 
+    integer :: i, j, x(2), S_nbrs
     real(dp) :: BF, dE_t, r
     
     allocate(S0(L+2,L+2), S_t(L,L))
+    
     S_t = S ! initialize trial config
+    dE = 0._dp ! init dE
     call random_spin(x)
     
     ! create trial config by flipping 1 spin:
@@ -27,11 +29,11 @@ contains
     S0(2:L+1,2:L+1) = S_t
     i = i+1; j = j+1 ! adjust indices accordingly 
     
-    dE_t = -2._dp*BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1)) -&
-      2._dp*h*S0(i,j) ! calculate change in energy
-
-    ! accept trial config 
-    if (dE_t < 0._dp) then 
+    ! calculate change in BE
+    S_nbrs = S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1)
+    dE_t = -2._dp*BJ*S0(i,j)*S_nbrs - 2._dp*h*S0(i,j) 
+   
+    if (dE_t < 0._dp) then  
       S = S_t ! if energy decreases always accept
       dE = dE_t
     else ! else accept config with probability of BF
@@ -40,9 +42,6 @@ contains
       if (r<BF) then
         S = S_t
         dE = dE_t
-      else
-        S = S
-        dE = 0._dp
       endif
     endif
 

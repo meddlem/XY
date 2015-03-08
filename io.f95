@@ -13,7 +13,7 @@ contains
     read(*,*) BJ
     write(*,'(A)',advance='no') "h = " 
     read(*,*) h
-    write(*,'(A)') "Starting simulation"
+    write(*,'(A)') "Running simulation..."
   end subroutine
 
   subroutine results_out(BJ,BE,BE_init,h,runtime) 

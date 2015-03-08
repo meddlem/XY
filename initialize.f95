@@ -39,7 +39,7 @@ contains
 
     allocate(u(L,L))
     call random_number(u)
-    ! assign initial spins based on uniform random number u 
+    ! assign initial spins based on uniform random number u, corresponds to T=∞ 
     
     S = -1
     where (u>0.5_dp) S = 1

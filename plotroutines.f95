@@ -122,7 +122,7 @@ contains
     write(10,*) 'set tmargin screen 0.9'
     write(10,*) 'set bmargin screen 0.1'
     write(10,*) 'set palette maxcolors 2'
-    write(10,*) 'set palette defined ( -1 "#000fff", 1 "#ee0000")'
+    write(10,*) 'set palette defined ( -1 "#0066ff", 1 "#ff3300")'
     write(10,*) 'set cbrange [-1:1]'
     write(10,*) 'set cbtics ("+" 1, "-" -1)'
     write(10,*) 'set title "'//TRIM(title)//'"'
