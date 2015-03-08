@@ -2,7 +2,7 @@ module initialize
   use constants
   implicit none
   private
-  public :: init_lattice, init_energy
+  public :: init_random_seed, init_lattice, init_energy
 
 contains
   subroutine init_energy(BE,S,BJ,h)
@@ -20,19 +20,18 @@ contains
 
     do i = 2,L+1
       do j = 2,L+1
-        BE = BE + BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1))
+        BE = BE - BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1))
       enddo
     enddo
 
     BE = 0.5_dp*BE ! account for double counting of pairs
-    BE = BE + h*sum(S) ! add external field
+    BE = BE - h*sum(S) ! add external field
   end subroutine
 
   subroutine init_lattice(S)
     integer, intent(out) :: S(L,L)
     real(dp) :: u(L,L)
 
-    call init_random_seed()
     call random_number(u)
     ! assign spins based on uniform random number u 
     

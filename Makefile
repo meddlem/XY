@@ -14,6 +14,7 @@ PROG = main #program name
 OBJS =
 OBJS += constants.o
 OBJS += initialize.o
+OBJS += markov.o
 OBJS += main.o
 
 all: $(PROG)
