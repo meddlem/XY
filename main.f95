@@ -20,7 +20,10 @@ program main
   
   allocate(S(L+2,L+2))
   call user_in(BJ,h)
+<<<<<<< Updated upstream
   
+=======
+>>>>>>> Stashed changes
   call init_random_seed()
   call init_lattice(S)
   call init_energy(BE,S,BJ,h)
