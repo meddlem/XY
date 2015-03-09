@@ -2,7 +2,7 @@ module initialize
   use constants
   implicit none
   private
-  public :: init_random_seed, init_lattice, init_energy
+  public :: init_random_seed, init_lattice, init_energy, init_vals
 
 contains
   subroutine init_energy(BE,S,BJ,h)
@@ -25,6 +25,21 @@ contains
     BE = BE - h*sum(S) ! add external field
   end subroutine
 
+  subroutine init_vals(dE_vals,BF_vals,BJ,h)
+    real(dp), intent(out) :: dE_vals(:,:), BF_vals(:,:)
+    real(dp), intent(in) :: BJ, h
+    integer :: i, j 
+
+    ! calculate values of dE and boltzmann factor 
+    do i=1,9
+      do j=1,2 
+        dE_vals(i,j) = - 2._dp*BJ*(i-5) - 2._dp*h*(j*2-3) 
+      enddo
+    enddo
+        
+    BF_vals = exp(-dE_vals)
+  end subroutine
+
   subroutine init_lattice(S)
     integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
@@ -33,12 +48,13 @@ contains
     allocate(u(L,L),S_tmp(L,L))
     S = 0
 
-    call random_number(u)
     ! assign initial spins at random, corresponds to T=∞ 
+    call random_number(u)
     S_tmp = -1
     where (u>0.5_dp) S_tmp = 1
+    
+    ! add zero padding
     S(2:L+1,2:L+1) = S_tmp
-    deallocate(u)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github

@@ -7,26 +7,25 @@ program main
   implicit none
   
   ! variables:
-  ! BE = beta*energy,
-  ! dE = change in energy between new and initial config
-  ! h = external field
-  ! array containing Spins indexed as row,column
+  ! BE: beta*energy,
+  ! dE: change in energy between new and initial config
+  ! h: external field
+  ! S: array containing Spins indexed as row, column
+  ! dE_vals: contains all possible values of energy change
+  ! BF_vals: all possible values of the boltzmann factor of dE
 
   real(dp) :: BJ, BE, BE_init, dE, h, dE_vals(9,2), BF_vals(9,2)
   integer, allocatable :: S(:,:)
-  integer :: i, j, start_time, end_time, runtime
+  integer :: i, start_time, end_time, runtime
   
   allocate(S(L+2,L+2))
   call user_in(BJ,h)
-
-  ! calculate values of dE and boltzmann factor 
-  forall(i=1:9,j=1:2) dE_vals(i,j) = - 2._dp*BJ*(i-5) - 2._dp*h*(j*2-3) 
-  BF_vals = exp(-dE_vals)
   
   call init_random_seed()
   call init_lattice(S)
   call init_energy(BE,S,BJ,h)
-  
+  call init_vals(dE_vals,BF_vals,BJ,h)
+
   BE_init = BE
   call gnu_lattice_plot(S,1,'initial state')
  
