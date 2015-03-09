@@ -39,7 +39,7 @@ contains
     else ! else accept config with probability of BF
       BF = exp(-dE_t)
       call random_number(r)
-      if (r<BF) then
+      if (r < BF) then
         S = S_t
         dE = dE_t
       endif
