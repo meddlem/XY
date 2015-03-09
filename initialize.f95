@@ -9,41 +9,35 @@ contains
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: h, BJ
-    integer, allocatable :: S0(:,:)
     integer :: i, j
 
-    if (size(S,1)<2) return !check
+    if (size(S,1) < 2) return !check
     
-    allocate(S0(L+2,L+2))
     BE = 0._dp ! initialze energy 
     
-    ! zero padding of S
-    S0 = 0
-    S0(2:L+1,2:L+1) = S
-
     do i = 2,L+1
       do j = 2,L+1
-        BE = BE - BJ*S0(i,j)*(S0(i-1,j) + S0(i+1,j) + S0(i,j-1) + S0(i,j+1))
+        BE = BE - BJ*S(i,j)*(S(i-1,j) + S(i+1,j) + S(i,j-1) + S(i,j+1))
       enddo
     enddo
 
     BE = 0.5_dp*BE ! account for double counting of pairs
     BE = BE - h*sum(S) ! add external field
-    
-    deallocate(S0)
   end subroutine
 
   subroutine init_lattice(S)
-    integer, intent(out) :: S(L,L)
+    integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
+    integer, allocatable :: S_tmp(:,:)
 
-    allocate(u(L,L))
+    allocate(u(L,L),S_tmp(L,L))
+    S = 0
+
     call random_number(u)
-    ! assign initial spins based on uniform random number u, corresponds to T=∞ 
-    
-    S = -1
-    where (u>0.5_dp) S = 1
-
+    ! assign initial spins at random, corresponds to T=∞ 
+    S_tmp = -1
+    where (u>0.5_dp) S_tmp = 1
+    S(2:L+1,2:L+1) = S_tmp
     deallocate(u)
   end subroutine 
 

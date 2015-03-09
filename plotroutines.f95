@@ -104,8 +104,8 @@ contains
     write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
     
     open(10,access = 'sequential',file = 'Sdata.dat')
-    do i = 1,L
-      write(10,rowfmt) (S(i,j), j=1,L) ! write spin configuration to file
+    do i = 2,L+1
+      write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
     enddo
     close(10,status= 'keep')
     
