@@ -18,9 +18,6 @@ program main
   
   allocate(S(L+2,L+2))
   call user_in(BJ,h)
-  ! dE_vals = 2._dp*BJ*(/(i,i=-4,4)/) ! possible values of dE
-  ! BF_vals = exp(-dE_vals) ! possible values of boltzmann factor
-
   call init_random_seed()
   call init_lattice(S)
   call init_energy(BE,S,BJ,h)
