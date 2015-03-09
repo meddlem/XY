@@ -2,7 +2,7 @@ module plotroutines
   use constants
   implicit none
   private
-  public :: gnu_line_plot, write_lattice, init_lattice_plot 
+  public :: gnu_line_plot, write_lattice, lattice_plot 
 
 contains
   subroutine gnu_line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
@@ -109,8 +109,9 @@ contains
     close(10,status= 'keep')
   end subroutine
 
-  subroutine init_lattice_plot(S,plot_no,title)
+  subroutine lattice_plot(S,plot_no,title,animate)
     integer, intent(in) :: S(:,:), plot_no
+    logical, intent(in) :: animate
     character(*), intent(in) :: title
     character(30) :: filename
     integer :: ret
@@ -121,9 +122,14 @@ contains
     
     ! create a gnuplot command file
     open(10,access = 'sequential',file = 'matplot.plt')
-      ! write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
-      write(10,*) 'set term x11 enhanced font "arial,15"' 
-      write(10,*) filename
+
+      if (animate .eqv. .true.) then 
+        write(10,*) 'set term x11 enhanced font "arial,15"' 
+      else
+        write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
+        write(10,*) filename
+      endif
+
       write(10,*) 'set border linewidth 0'
       write(10,*) 'set lmargin screen 0.1'
       write(10,*) 'set rmargin screen 0.9'
@@ -141,10 +147,13 @@ contains
 
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'splot "Sdata.dat" matrix with image'
-      write(10,*) 'pause 0.4'
-      ! write(10,*) 'replot'
-      write(10,*) 'count = count + 1'
-      write(10,*) 'if(count<100) reread;'
+      
+      if (animate .eqv. .true.) then
+        write(10,*) 'pause 0.5'
+        ! write(10,*) 'replot'
+        write(10,*) 'count = count + 1'
+        write(10,*) 'if(count<100) reread;'
+      endif
     close(10,status = 'keep')
 
     ! now call gnuplot and plot the matrix

@@ -23,7 +23,7 @@ program main
   call init_energy(BE,S,BJ,h)
   
   BE_init = BE
-  call init_lattice_plot(S,1,'initial state')
+  call lattice_plot(S,1,'',.true.)
  
   call system_clock(start_time)
   do i=1,steps
@@ -35,8 +35,9 @@ program main
   enddo
   call system_clock(end_time)
   
+  call system('pkill gnuplot')
+  
   runtime = (end_time - start_time)/1000
   call results_out(BJ,BE,BE_init,h,runtime)
-  ! call gnu_lattice_plot(S,2,'final state')
-  call system('pkill gnuplot')
+  call lattice_plot(S,1,'final state',.false.)
 end program
