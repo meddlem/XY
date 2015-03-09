@@ -2,7 +2,7 @@ module plotroutines
   use constants
   implicit none
   private
-  public :: gnu_line_plot, gnu_lattice_plot 
+  public :: gnu_line_plot, write_lattice, init_lattice_plot 
 
 contains
   subroutine gnu_line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
@@ -52,6 +52,7 @@ contains
     ! set output terminal  
     write(10,*) 'set term pngcairo size 640,480 enhanced font "Verdana,10"'
     ! write(10,*) 'set term epscairo size 13cm,9cm font "Verdana,15"'
+
     write(10,*) filename
     ! set line color definitions
     write(10,*) &
@@ -94,47 +95,59 @@ contains
     call system('rm xydata.dat',ret)
   end subroutine 
 
-  subroutine gnu_lattice_plot(S,plot_no,title)
-    integer, intent(in) :: S(:,:), plot_no
-    character(*), intent(in) :: title
-    integer :: i, j, ret
-    character(30) :: rowfmt, filename
+  subroutine write_lattice(S)
+    integer, intent(in) :: S(:,:)
+    integer :: i, j
+    character(30) :: rowfmt
 
     write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
-    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
     
     open(10,access = 'sequential',file = 'Sdata.dat')
-    do i = 2,L+1
-      write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
-    enddo
+      do i = 2,L+1
+        write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
+      enddo
     close(10,status= 'keep')
-    
-    open(10,access = 'sequential',file = 'matplot.txt')
-    ! set output terminal  
-    write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
-    write(10,*) filename
-    write(10,*) 'set border linewidth 0'
-    !write(10,*) 'unset key'
-    !write(10,*) 'unset colorbox'
-    !write(10,*) 'unset tics'
-    write(10,*) 'set lmargin screen 0.1'
-    write(10,*) 'set rmargin screen 0.9'
-    write(10,*) 'set tmargin screen 0.9'
-    write(10,*) 'set bmargin screen 0.1'
-    write(10,*) 'set palette maxcolors 2'
-    write(10,*) 'set palette defined ( -1 "#0066ff", 1 "#ff3300")'
-    write(10,*) 'set cbrange [-1:1]'
-    write(10,*) 'set cbtics ("+" 1, "-" -1)'
-    write(10,*) 'set title "'//TRIM(title)//'"'
+  end subroutine
 
-    write(10,*) 'set pm3d map'
-    write(10,*) 'splot "Sdata.dat" matrix with image'
+  subroutine init_lattice_plot(S,plot_no,title)
+    integer, intent(in) :: S(:,:), plot_no
+    character(*), intent(in) :: title
+    character(30) :: filename
+    integer :: ret
+    
+    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
+    
+    call write_lattice(S)
+    
+    ! create a gnuplot command file
+    open(10,access = 'sequential',file = 'matplot.plt')
+      ! write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
+      write(10,*) 'set term x11 enhanced font "arial,15"' 
+      write(10,*) filename
+      write(10,*) 'set border linewidth 0'
+      write(10,*) 'set lmargin screen 0.1'
+      write(10,*) 'set rmargin screen 0.9'
+      write(10,*) 'set tmargin screen 0.9'
+      write(10,*) 'set bmargin screen 0.1'
+      write(10,*) 'set palette maxcolors 2'
+      write(10,*) 'set palette defined ( -1 "#0066ff", 1 "#ff3300")'
+      write(10,*) 'set cbrange [-1:1]'
+      write(10,*) 'set cbtics ("+" 1, "-" -1)'
+      write(10,*) 'set title "'//TRIM(title)//'"'
+      write(10,*) 'set pm3d map'
+      write(10,*) 'count = 0'
+      write(10,*) 'load "loop.plt"'
+    close(10,status = 'keep')
+
+    open(10,access = 'sequential', file = 'loop.plt')
+      write(10,*) 'splot "Sdata.dat" matrix with image'
+      write(10,*) 'pause 0.4'
+      ! write(10,*) 'replot'
+      write(10,*) 'count = count + 1'
+      write(10,*) 'if(count<100) reread;'
     close(10,status = 'keep')
 
     ! now call gnuplot and plot the matrix
-    call system('gnuplot matplot.txt',ret)
-    call system('rm matplot.txt',ret)
-    call system('rm Sdata.dat',ret)
+    call system("gnuplot matplot.plt &",ret)
   end subroutine
-
 end module 
