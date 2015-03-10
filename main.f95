@@ -33,7 +33,7 @@ program main
     call gen_config(S,dE,dE_vals,BF_vals)
     BE = BE + dE
     
-    if (mod(i,N)==0) call write_lattice(S) !plot every sweep
+    if (mod(i,5*N)==0) call write_lattice(S) !plot every sweep
   enddo
   call system_clock(end_time)
 

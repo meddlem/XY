@@ -30,7 +30,7 @@ contains
     real(dp), intent(in) :: BJ, h
     integer :: i, j 
 
-    ! calculate values of dE and boltzmann factor 
+    ! calculate possible values of dE and boltzmann factor 
     do i=1,9
       do j=1,2 
         dE_vals(i,j) = - 2._dp*BJ*(i-5) - 2._dp*h*(j*2-3) 

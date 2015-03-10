@@ -102,11 +102,12 @@ contains
 
     write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
     
-    open(10,access = 'sequential',file = 'Sdata.dat')
+    open(10,access = 'sequential',status = 'replace',file = 'Sdata.dat')
       do i = 2,L+1
-        write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
+        write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file 
       enddo
-    close(10,status= 'keep')
+    close(10)
+    call system('cat Sdata.dat > plotfifo.dat&')
   end subroutine
 
   subroutine lattice_plot(S,plot_no,title,animate)
@@ -117,14 +118,16 @@ contains
     integer :: ret
     
     write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
+    call system("rm -f plotfifo.dat",ret) ! remove fifo pipe
+    call system("mkfifo plotfifo.dat",ret) ! creates fifo pipe: plotinfo.dat
+    call system("exec 4<>plotfifo.dat",ret)
     
-    call write_lattice(S)
+    call write_lattice(S) ! write spin config to pipe
     
     ! create a gnuplot command file
     open(10,access = 'sequential',file = 'matplot.plt')
-
       if (animate .eqv. .true.) then 
-        write(10,*) 'set term x11 enhanced font "arial,15"' 
+        write(10,*) 'set term x11 enhanced font "Verdana,10"' 
       else
         write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
         write(10,*) filename
@@ -144,19 +147,18 @@ contains
       write(10,*) 'count = 0'
       write(10,*) 'load "loop.plt"'
     close(10,status = 'keep')
-
+    
+    ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
-      write(10,*) 'splot "Sdata.dat" matrix with image'
+      write(10,*) 'splot "< cat plotfifo.dat" matrix with image'
       
       if (animate .eqv. .true.) then
-        write(10,*) 'pause 0.5'
-        ! write(10,*) 'replot'
         write(10,*) 'count = count + 1'
         write(10,*) 'if(count<1000) reread;'
       endif
     close(10,status = 'keep')
-
-    ! now call gnuplot and plot the matrix
+    
+    ! now fork instance of gnuplot to plot the matrix
     call system("gnuplot matplot.plt &",ret)
   end subroutine
 end module 
