@@ -2,7 +2,7 @@ module io
   use constants
   implicit none
   private
-  public :: user_in, results_out
+  public :: user_in, results_out, clean_wd
 contains
 
   subroutine user_in(BJ,h)

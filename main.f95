@@ -40,6 +40,6 @@ program main
   call system('pkill gnuplot') !needed for now
   
   runtime = (end_time - start_time)/1000
-  call results_out(BJ,BE,BE_init,h,runtime)
   call lattice_plot(S,2,'final state',.false.)
+  call results_out(BJ,BE,BE_init,h,runtime)
 end program
