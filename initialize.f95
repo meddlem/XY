@@ -55,6 +55,8 @@ contains
     
     ! add zero padding
     S(2:L+1,2:L+1) = S_tmp
+
+    deallocate(u,S_tmp)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github

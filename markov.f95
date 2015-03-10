@@ -40,6 +40,8 @@ contains
         dE = dE_t
       endif
     endif
+
+    deallocate(S_t)
   end subroutine
 
   subroutine random_spin(x)
