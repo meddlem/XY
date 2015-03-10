@@ -11,4 +11,6 @@ module constants
 
   integer, parameter :: L = 100
   integer, parameter :: N = L**2
+
+  integer, parameter :: steps = 100*N
 end module

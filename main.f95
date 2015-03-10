@@ -26,16 +26,20 @@ program main
   call init_vals(dE_vals,BF_vals,BJ,h)
 
   BE_init = BE
-  call gnu_lattice_plot(S,1,'initial state')
+  call lattice_plot(S,1,'',.true.)
  
   call system_clock(start_time)
-  do i=1,100*N
+  do i=1,steps
     call gen_config(S,dE,dE_vals,BF_vals)
     BE = BE + dE
+    
+    if (mod(i,N)==0) call write_lattice(S) !plot every sweep
   enddo
   call system_clock(end_time)
+
+  call system('pkill gnuplot') !needed for now
   
   runtime = (end_time - start_time)/1000
   call results_out(BJ,BE,BE_init,h,runtime)
-  call gnu_lattice_plot(S,2,'final state')
+  call lattice_plot(S,2,'final state',.false.)
 end program
