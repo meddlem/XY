@@ -10,11 +10,9 @@ contains
     integer, intent(inout) :: S(:,:)
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: dE_vals(:,:), BF_vals(:,:)
-    integer, allocatable :: S_t(:,:)
-    integer :: i, j, ind_BJ, ind_h, x(2), S_nbrs
+    integer :: i, j, ind_BJ, ind_h, x(2), S_nbrs, S_t(L+2,L+2)
     real(dp) :: r, BF, dE_t
     
-    allocate(S_t(L+2,L+2))
     S_t = S ! initialize trial config
     dE = 0._dp ! init dE
 
@@ -41,7 +39,6 @@ contains
       endif
     endif
 
-    deallocate(S_t)
   end subroutine
 
   subroutine random_spin(x)
