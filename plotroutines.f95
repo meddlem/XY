@@ -106,7 +106,7 @@ contains
       do i = 2,L+1
         write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
       enddo
-    close(10,status= 'keep')
+    close(10)
   end subroutine
 
   subroutine lattice_plot(S,plot_no,title,animate)
@@ -143,18 +143,17 @@ contains
       write(10,*) 'set pm3d map'
       write(10,*) 'count = 0'
       write(10,*) 'load "loop.plt"'
-    close(10,status = 'keep')
+    close(10)
 
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'splot "Sdata.dat" matrix with image'
       
       if (animate .eqv. .true.) then
         write(10,*) 'pause 0.5'
-        ! write(10,*) 'replot'
         write(10,*) 'count = count + 1'
-        write(10,*) 'if(count<1000) reread;'
+        write(10,*) 'if(count<100000) reread;'
       endif
-    close(10,status = 'keep')
+    close(10)
 
     ! now call gnuplot and plot the matrix
     call system("gnuplot matplot.plt &",ret)

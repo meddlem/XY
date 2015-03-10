@@ -32,7 +32,6 @@ program main
     BE = BE + dE
   enddo
   call system_clock(end_time)
-  
   call system('pkill gnuplot')
   
   runtime = (end_time - start_time)/1000
