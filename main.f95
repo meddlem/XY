@@ -28,9 +28,7 @@ program main
   call system_clock(start_time)
   do i=1,steps
     call gen_config(S,dE,BJ,h)
-    if (mod(i,N)==0) then
-      call write_lattice(S) 
-    endif
+    if (mod(i,N)==0) call write_lattice(S) 
     BE = BE + dE
   enddo
   call system_clock(end_time)

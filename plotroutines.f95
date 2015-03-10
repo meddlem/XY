@@ -152,7 +152,7 @@ contains
         write(10,*) 'pause 0.5'
         ! write(10,*) 'replot'
         write(10,*) 'count = count + 1'
-        write(10,*) 'if(count<100) reread;'
+        write(10,*) 'if(count<1000) reread;'
       endif
     close(10,status = 'keep')
 
