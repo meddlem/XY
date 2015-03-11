@@ -27,8 +27,8 @@ contains
     ind_h = (S_t(i,j) + 3)/2
     dE_t = dE_vals(ind_BJ,ind_h)
    
-    if (dE_t < 0._dp) then  
-      S = S_t ! if energy decreases always accept
+    if (dE_t < 0._dp) then ! if energy decreases always accept
+      S = S_t 
       dE = dE_t
     else ! else accept config with probability of BF
       BF = BF_vals(ind_BJ,ind_h)

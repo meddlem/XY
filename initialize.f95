@@ -44,17 +44,16 @@ contains
     integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
     integer, allocatable :: S_tmp(:,:)
+    ! assign initial spins at random, corresponds to T=∞ 
 
     allocate(u(L,L),S_tmp(L,L))
     S = 0
-
-    ! assign initial spins at random, corresponds to T=∞ 
-    call random_number(u)
     S_tmp = -1
-    where (u>0.5_dp) S_tmp = 1
+
+    call random_number(u)
+    where (u > 0.5_dp) S_tmp = 1
     
-    ! add zero padding
-    S(2:L+1,2:L+1) = S_tmp
+    S(2:L+1,2:L+1) = S_tmp ! add zero padding
 
     deallocate(u,S_tmp)
   end subroutine 

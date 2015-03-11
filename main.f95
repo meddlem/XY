@@ -37,7 +37,7 @@ program main
     call gen_config(S,dE,dE_vals,BF_vals)
     BE_tmp = BE_tmp + dE
 
-    if (mod(i,N)==0) then 
+    if (mod(i,N) == 0) then 
       j = j+1
       BE(j) = BE_tmp ! record energy every sweep
       call write_lattice(S) ! write lattice to pipe
@@ -46,6 +46,7 @@ program main
   call system_clock(end_time)
 
   runtime = (end_time - start_time)/1000
+
   call close_lattice_plot()
   call results_out(BJ,BE_tmp,BE(1),h,runtime)
   call line_plot(t,BE,'t','energy','','',1)
