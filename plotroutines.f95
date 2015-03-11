@@ -2,17 +2,13 @@ module plotroutines
   use constants
   implicit none
   private
-  public :: line_plot, write_lattice, lattice_plot 
+  public :: line_plot, write_lattice, close_lattice_plot, animate_lattice
 
 contains
-  subroutine lattice_plot(S,plot_no,title,animate)
-    integer, intent(in) :: S(:,:), plot_no
-    logical, intent(in) :: animate
+  subroutine animate_lattice(S,title)
+    integer, intent(in) :: S(:,:)
     character(*), intent(in) :: title
-    character(30) :: filename
     integer :: ret
-    
-    write(filename,'(A,I0,A)') 'set output "plot',plot_no,'.png"'
     
     ! creates fifo pipe: plotfifo.dat
     call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
@@ -21,13 +17,7 @@ contains
     
     ! create a gnuplot command file
     open(10,access = 'sequential',file = 'matplot.plt')
-      if (animate .eqv. .true.) then 
-        write(10,*) 'set term x11 enhanced font "Verdana,10"' 
-      else
-        write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
-        write(10,*) filename
-      endif
-
+      write(10,*) 'set term x11 enhanced font "Verdana,10"' 
       write(10,*) 'set border linewidth 0'
       write(10,*) 'set lmargin screen 0.1'
       write(10,*) 'set rmargin screen 0.9'
@@ -46,11 +36,8 @@ contains
     ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'splot "< cat plotfifo.dat" matrix with image'
-      
-      if (animate .eqv. .true.) then
-        write(10,*) 'count = count + 1'
-        write(10,*) 'if(count<1000000) reread;'
-      endif
+      write(10,*) 'count = count + 1'
+      write(10,*) 'if(count<1000000) reread;'
     close(10)
     
     ! now fork instance of gnuplot to plot/animate the lattice
@@ -69,6 +56,11 @@ contains
         write(11,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to pipe 
       enddo
     close(11)
+  end subroutine
+
+  subroutine close_lattice_plot()
+    call system('pkill gnuplot')
+    call system('rm -f plotfifo.dat')
   end subroutine
 
   subroutine line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
