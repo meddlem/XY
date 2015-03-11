@@ -2,10 +2,68 @@ module plotroutines
   use constants
   implicit none
   private
-  public :: gnu_line_plot, write_lattice, lattice_plot 
+  public :: line_plot, write_lattice, close_lattice_plot, animate_lattice
 
 contains
-  subroutine gnu_line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
+  subroutine animate_lattice(S,title)
+    integer, intent(in) :: S(:,:)
+    character(*), intent(in) :: title
+    integer :: ret
+    
+    ! creates fifo pipe: plotfifo.dat
+    call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
+    
+    call write_lattice(S) ! write spin config to pipe
+    
+    ! create a gnuplot command file
+    open(10,access = 'sequential',file = 'matplot.plt')
+      write(10,*) 'set term x11 enhanced font "Verdana,10"' 
+      write(10,*) 'set border linewidth 0'
+      write(10,*) 'set lmargin screen 0.1'
+      write(10,*) 'set rmargin screen 0.9'
+      write(10,*) 'set tmargin screen 0.9'
+      write(10,*) 'set bmargin screen 0.1'
+      write(10,*) 'set palette maxcolors 2'
+      write(10,*) 'set palette defined ( -1 "#0066ff", 1 "#ff3300")'
+      write(10,*) 'set cbrange [-1:1]'
+      write(10,*) 'set cbtics ("+" 1, "-" -1)'
+      write(10,*) 'set title "'//TRIM(title)//'"'
+      write(10,*) 'set pm3d map'
+      write(10,*) 'count = 0'
+      write(10,*) 'load "loop.plt"'
+    close(10)
+    
+    ! create plot/animate instruction
+    open(10,access = 'sequential', file = 'loop.plt')
+      write(10,*) 'splot "< cat plotfifo.dat" matrix with image'
+      write(10,*) 'count = count + 1'
+      write(10,*) 'if(count<1000000) reread;'
+    close(10)
+    
+    ! now fork instance of gnuplot to plot/animate the lattice
+    call system("gnuplot matplot.plt &",ret)
+  end subroutine
+  
+  subroutine write_lattice(S)
+    integer, intent(in) :: S(:,:)
+    integer :: i, j
+    character(30) :: rowfmt
+
+    write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
+    
+    open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
+      do i = 2,L+1
+        write(11,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to pipe 
+      enddo
+    close(11)
+  end subroutine
+
+  subroutine close_lattice_plot()
+    call system('pkill gnuplot')
+    call system('rm -f plotfifo.dat')
+  end subroutine
+
+  subroutine line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
     real(dp), intent(in) :: x(:), y1(:)
     real(dp), intent(in), optional :: y2(:)
     character(*), intent(in) :: xlabel, ylabel, label1, title
@@ -94,68 +152,4 @@ contains
     call system('rm gplot.txt',ret)
     call system('rm xydata.dat',ret)
   end subroutine 
-
-  subroutine write_lattice(S)
-    integer, intent(in) :: S(:,:)
-    integer :: i, j
-    character(30) :: rowfmt
-
-    write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
-    
-    open(10,access = 'sequential',file = 'Sdata.dat')
-      do i = 2,L+1
-        write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file
-      enddo
-    close(10)
-  end subroutine
-
-  subroutine lattice_plot(S,plot_no,title,animate)
-    integer, intent(in) :: S(:,:), plot_no
-    logical, intent(in) :: animate
-    character(*), intent(in) :: title
-    character(30) :: filename
-    integer :: ret
-    
-    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
-    
-    call write_lattice(S)
-    
-    ! create a gnuplot command file
-    open(10,access = 'sequential',file = 'matplot.plt')
-
-      if (animate .eqv. .true.) then 
-        write(10,*) 'set term x11 enhanced font "arial,15"' 
-      else
-        write(10,*) 'set term pngcairo size 640,640 enhanced font "Verdana,10"'
-        write(10,*) filename
-      endif
-
-      write(10,*) 'set border linewidth 0'
-      write(10,*) 'set lmargin screen 0.1'
-      write(10,*) 'set rmargin screen 0.9'
-      write(10,*) 'set tmargin screen 0.9'
-      write(10,*) 'set bmargin screen 0.1'
-      write(10,*) 'set palette maxcolors 2'
-      write(10,*) 'set palette defined ( -1 "#0066ff", 1 "#ff3300")'
-      write(10,*) 'set cbrange [-1:1]'
-      write(10,*) 'set cbtics ("+" 1, "-" -1)'
-      write(10,*) 'set title "'//TRIM(title)//'"'
-      write(10,*) 'set pm3d map'
-      write(10,*) 'count = 0'
-      write(10,*) 'load "loop.plt"'
-    close(10)
-
-    open(10,access = 'sequential', file = 'loop.plt')
-      write(10,*) 'splot "Sdata.dat" matrix with image'
-      
-      if (animate .eqv. .true.) then
-        write(10,*) 'pause 0.5'
-        write(10,*) 'count = count + 1'
-        write(10,*) 'if(count<100000) reread;'
-      endif
-    close(10)
-
-    ! now call gnuplot and plot the matrix
-    call system("gnuplot matplot.plt &",ret)
-  end subroutine
 end module 
