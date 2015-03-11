@@ -38,7 +38,6 @@ contains
         dE = dE_t
       endif
     endif
-
   end subroutine
 
   subroutine random_spin(x)

@@ -2,24 +2,9 @@ module plotroutines
   use constants
   implicit none
   private
-  public :: gnu_line_plot, write_lattice, lattice_plot 
+  public :: line_plot, write_lattice, lattice_plot 
 
 contains
-  subroutine write_lattice(S)
-    integer, intent(in) :: S(:,:)
-    integer :: i, j
-    character(30) :: rowfmt
-
-    write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
-    
-    open(10,access = 'sequential',status = 'replace',file = 'Sdata.dat')
-      do i = 2,L+1
-        write(10,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to file 
-      enddo
-    close(10)
-    call system('cat Sdata.dat > plotfifo.dat&')
-  end subroutine
-
   subroutine lattice_plot(S,plot_no,title,animate)
     integer, intent(in) :: S(:,:), plot_no
     logical, intent(in) :: animate
@@ -28,9 +13,9 @@ contains
     integer :: ret
     
     write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
-    call system("rm -f plotfifo.dat",ret) ! remove fifo pipe
-    call system("mkfifo plotfifo.dat",ret) ! creates fifo pipe: plotinfo.dat
-    !call system("exec 4<>plotfifo.dat",ret)
+    
+    ! creates fifo pipe: plotfifo.dat
+    call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
     
     call write_lattice(S) ! write spin config to pipe
     
@@ -64,15 +49,29 @@ contains
       
       if (animate .eqv. .true.) then
         write(10,*) 'count = count + 1'
-        write(10,*) 'if(count<10000) reread;'
+        write(10,*) 'if(count<1000000) reread;'
       endif
     close(10)
     
-    ! now fork instance of gnuplot to plot the matrix
+    ! now fork instance of gnuplot to plot/animate the lattice
     call system("gnuplot matplot.plt &",ret)
   end subroutine
+  
+  subroutine write_lattice(S)
+    integer, intent(in) :: S(:,:)
+    integer :: i, j
+    character(30) :: rowfmt
 
-  subroutine gnu_line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
+    write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
+    
+    open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
+      do i = 2,L+1
+        write(11,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to pipe 
+      enddo
+    close(11)
+  end subroutine
+
+  subroutine line_plot(x,y1,xlabel,ylabel,label1,title,plot_no,y2,label2)
     real(dp), intent(in) :: x(:), y1(:)
     real(dp), intent(in), optional :: y2(:)
     character(*), intent(in) :: xlabel, ylabel, label1, title
