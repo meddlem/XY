@@ -12,7 +12,7 @@ contains
     character(30) :: filename
     integer :: ret
     
-    write(filename,'(A,I1,A)') 'set output "plot',plot_no,'.png"'
+    write(filename,'(A,I0,A)') 'set output "plot',plot_no,'.png"'
     
     ! creates fifo pipe: plotfifo.dat
     call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
