@@ -1,4 +1,6 @@
 *.o
+main
+*.txt
 *.mod
 *.png
 *.plt
