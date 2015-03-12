@@ -23,7 +23,7 @@ program main
   call init_random_seed()
   call init_lattice(S)
   call init_energy(BE_tmp,S,BJ,h)
-  ! call animate_lattice(S,'')
+  call animate_lattice(S,'')
 
   ! initialize some needed variables
   j = 1
@@ -34,13 +34,13 @@ program main
   call system_clock(start_time)
   do i=1,steps
     call gen_config(S,dE,p)
-    !BE_tmp = BE_tmp + dE
+    BE_tmp = BE_tmp + dE
 
-   ! if (mod(i,N) == 0) then 
-   !   j = j+1
-   !   BE(j) = BE_tmp ! record energy every sweep
-   !   call write_lattice(S) ! write lattice to pipe
-    !endif
+    if (mod(i,N) == 0) then 
+      j = j+1
+      BE(j) = BE_tmp ! record energy every sweep
+      call write_lattice(S) ! write lattice to pipe
+    endif
   enddo
   call system_clock(end_time)
 

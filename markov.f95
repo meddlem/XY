@@ -9,7 +9,7 @@ contains
     integer, intent(inout) :: S(:,:)
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: p
-    integer :: i, j, S_tmp, s_cl, s_add, C_idx(N,2), x(2), nn(4,2)
+    integer :: j, S_tmp, s_cl, s_add, C_idx(N,2), x(2), x_nn(2), nn(4,2)
     real(dp) :: r
 
     ! initialize variables 
@@ -20,30 +20,27 @@ contains
 
     call random_spin(x) ! start cluster by choosing 1 spin
     C_idx(1,:) = x ! init array that holds indices of all spins in cluster
+    S_tmp = S(x(1),x(2)) ! save state of origional spin
 
     do while (s_add /= 0)
       s_add = 0
-      ! pick a spin x in the cluster
-      ! here we need to keep track of the boundary 
-      do i = 1,s_cl
-        x = C_idx(i,:)
-        nn = nn_idx(x) ! get nearest neighbors of spin x
-        S_tmp = S(x(1),x(2)) ! get spin
-        
-        ! iterate over neighbors of x
-        do j = 1,4 
-          if (S(nn(j,1),nn(j,2))==S_tmp) then 
-            call random_number(r)
-            if (r<p) then ! segfault occurs here.. 
-              s_cl = s_cl+1
-              s_add = s_add+1
-              C_idx(s_cl,:) = nn(j,:) ! add spin to cluster with probability p
-            endif
-          endif
-        enddo
-      enddo
+      x = C_idx(s_cl,:) ! pick a spin x in the cluster
+      nn = nn_idx(x) ! get nearest neighbors of spin x
       
-      S(x(1),x(2)) = -S(x(1),x(2)) ! flip spin so it's not visited again
+      ! iterate over neighbors of x
+      do j = 1,4 
+        x_nn = nn(j,:)
+        if (S(x_nn(1),x_nn(2))==S_tmp) then 
+          call random_number(r)
+          
+          if (r<p) then  
+            s_cl = s_cl+1
+            s_add = s_add+1
+            C_idx(s_cl,:) = nn(j,:) ! add spin to cluster with probability p
+          endif
+        endif
+      enddo
+      S(x(1),x(2)) = -S_tmp ! flip spin so it's not visited again
     enddo 
   end subroutine
 
