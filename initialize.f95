@@ -53,7 +53,7 @@ contains
     call random_number(u)
     where (u > 0.5_dp) S_tmp = 1
     
-    S(2:L+1,2:L+1) = S_tmp ! add zero padding
+      S(2:L+1,2:L+1) = S_tmp ! add zero padding
 
     deallocate(u,S_tmp)
   end subroutine 

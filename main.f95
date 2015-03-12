@@ -37,8 +37,7 @@ program main
     BE_tmp = BE_tmp + dE
     j = j+1
     BE(j) = BE_tmp ! record energy every sweep
-    if (mod(i,1)==0)call write_lattice(S) ! write lattice to pipe
-    !if (i>1000) call sleep(1)
+    if (mod(i,9)==0) call write_lattice(S) ! write lattice to pipe
   enddo
   call system_clock(end_time)
 
