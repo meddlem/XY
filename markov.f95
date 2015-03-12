@@ -13,7 +13,7 @@ contains
     integer :: i, j, S_tmp, s_cl, s_add, x(2), x_nn(2), nn(4,2)
     real(dp) :: r
     
-    allocate(C_idx(2*N,2))
+    allocate(C_idx(N,2))
 
     ! initialize variables 
     dE = 0._dp ! init dE
@@ -23,8 +23,9 @@ contains
     C_idx = 0 ! init array that holds indices of all spins in cluster
 
     call random_spin(x) ! start cluster by choosing 1 spin
-    C_idx(1,:) = x     
+    C_idx(1,:) = x ! add spin to cluster     
     S_tmp = S(x(1),x(2)) ! save state of orig spin
+    S(x(1),x(2)) = -S_tmp ! flip initial spin
     
     do while ((s_add /= 0) .or. (i<=s_cl))
       s_add = 0
@@ -41,14 +42,13 @@ contains
             s_cl = s_cl+1
             s_add = s_add+1
             C_idx(s_cl,:) = x_nn ! add spin to cluster with probability p
-          endif
 
-          S(x_nn(1),x_nn(2)) = -S_tmp ! flip spin so it's not visited again
+            S(x_nn(1),x_nn(2)) = -S_tmp ! flip spin so it's not visited again
+          endif
         endif
       enddo
       i = i+1 ! move to next spin in cluster
     enddo 
-    
     deallocate(C_idx)
   end subroutine
 
