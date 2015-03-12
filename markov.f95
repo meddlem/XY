@@ -5,20 +5,18 @@ module markov
   public :: gen_config
 
 contains
-  
   subroutine gen_config(S,dE,p)
-    integer, intent(in) :: S(:,:)
+    integer, intent(inout) :: S(:,:)
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: p
-    integer :: i, j, S_tmp(L+2,L+2), s_cl, s_add, C_idx(N,2), x(2), nn(4,2)
+    integer :: i, j, S_tmp, s_cl, s_add, C_idx(N,2), x(2), nn(4,2)
     real(dp) :: r
 
     ! initialize variables 
-    print *, 'a'
-    S_tmp = S
     dE = 0._dp ! init dE
     s_cl = 1 ! number of spins in cluster
     s_add = 1 ! number of spins added to cluster
+    C_idx = 0 ! initialize cluster 
 
     call random_spin(x) ! start cluster by choosing 1 spin
     C_idx(1,:) = x ! init array that holds indices of all spins in cluster
@@ -26,13 +24,15 @@ contains
     do while (s_add /= 0)
       s_add = 0
       ! pick a spin x in the cluster
+      ! here we need to keep track of the boundary 
       do i = 1,s_cl
         x = C_idx(i,:)
         nn = nn_idx(x) ! get nearest neighbors of spin x
+        S_tmp = S(x(1),x(2)) ! get spin
         
         ! iterate over neighbors of x
         do j = 1,4 
-          if (S_tmp(nn(j,1),nn(j,2))==S_tmp(x(1),x(2))) then
+          if (S(nn(j,1),nn(j,2))==S_tmp) then 
             call random_number(r)
             if (r<p) then ! segfault occurs here.. 
               s_cl = s_cl+1
@@ -41,15 +41,10 @@ contains
             endif
           endif
         enddo
-      enddo 
+      enddo
+      
+      S(x(1),x(2)) = -S(x(1),x(2)) ! flip spin so it's not visited again
     enddo 
-
-    ! now flip the cluster
-    do i=1,s_cl
-      x = C_idx(i,:)
-      S_tmp(x(1),x(2)) = -S_tmp(x(1),x(2))
-    enddo
-    print *, 'b'
   end subroutine
 
   subroutine random_spin(x)
