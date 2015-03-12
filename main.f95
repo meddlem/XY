@@ -14,7 +14,7 @@ program main
   ! dE_vals: contains all possible values of energy change
   ! BF_vals: all possible values of the boltzmann factor of dE
 
-  real(dp) :: BJ, p, t(sweeps+1), BE(sweeps+1), BE_tmp, dE, h
+  real(dp) :: BJ, p, t(steps+1), BE(steps+1), BE_tmp, dE, h
   integer, allocatable :: S(:,:)
   integer :: i, j, start_time, end_time, runtime
   
@@ -28,19 +28,17 @@ program main
   ! initialize some needed variables
   j = 1
   BE(j) = BE_tmp
-  t = (/(i,i=0,sweeps)/)
+  t = (/(i,i=0,steps)/)
   p = 1 - exp(-2._dp*BJ)
 
   call system_clock(start_time)
   do i=1,steps
     call gen_config(S,dE,p)
     BE_tmp = BE_tmp + dE
-
-    if (mod(i,N) == 0) then 
-      j = j+1
-      BE(j) = BE_tmp ! record energy every sweep
-      call write_lattice(S) ! write lattice to pipe
-    endif
+    j = j+1
+    BE(j) = BE_tmp ! record energy every sweep
+    if (mod(i,1)==0)call write_lattice(S) ! write lattice to pipe
+    !if (i>1000) call sleep(1)
   enddo
   call system_clock(end_time)
 

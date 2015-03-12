@@ -9,17 +9,19 @@ contains
     integer, intent(inout) :: S(:,:)
     real(dp), intent(out) :: dE
     real(dp), intent(in) :: p
-    integer :: j, S_tmp, s_cl, s_add, C_idx(N,2), x(2), x_nn(2), nn(4,2)
+    integer, allocatable :: C_idx(:,:)
+    integer :: j, S_tmp, s_cl, s_add, x(2), x_nn(2), nn(4,2)
     real(dp) :: r
-
+    
+    allocate(C_idx(2*N,2))
     ! initialize variables 
     dE = 0._dp ! init dE
     s_cl = 1 ! number of spins in cluster
     s_add = 1 ! number of spins added to cluster
-    C_idx = 0 ! initialize cluster 
+    C_idx = 0 ! init array that holds indices of all spins in cluster
 
     call random_spin(x) ! start cluster by choosing 1 spin
-    C_idx(1,:) = x ! init array that holds indices of all spins in cluster
+    C_idx(1,:) = x     
     S_tmp = S(x(1),x(2)) ! save state of origional spin
 
     do while (s_add /= 0)
@@ -42,6 +44,8 @@ contains
       enddo
       S(x(1),x(2)) = -S_tmp ! flip spin so it's not visited again
     enddo 
+
+    deallocate(C_idx)
   end subroutine
 
   subroutine random_spin(x)
