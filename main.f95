@@ -14,8 +14,7 @@ program main
   ! dE_vals: contains all possible values of energy change
   ! BF_vals: all possible values of the boltzmann factor of dE
 
-  real(dp) :: BJ, t(sweeps+1), BE(sweeps+1), BE_tmp, dE, h, dE_vals(9,2), &
-    BF_vals(9,2)
+  real(dp) :: BJ, p, t(sweeps+1), BE(sweeps+1), BE_tmp, dE, h
   integer, allocatable :: S(:,:)
   integer :: i, j, start_time, end_time, runtime
   
@@ -24,24 +23,24 @@ program main
   call init_random_seed()
   call init_lattice(S)
   call init_energy(BE_tmp,S,BJ,h)
-  call init_vals(dE_vals,BF_vals,BJ,h)
-  call animate_lattice(S,'')
+  ! call animate_lattice(S,'')
 
   ! initialize some needed variables
   j = 1
   BE(j) = BE_tmp
   t = (/(i,i=0,sweeps)/)
+  p = 1 - exp(-2._dp*BJ)
 
   call system_clock(start_time)
   do i=1,steps
-    call gen_config(S,dE,dE_vals,BF_vals)
-    BE_tmp = BE_tmp + dE
+    call gen_config(S,dE,p)
+    !BE_tmp = BE_tmp + dE
 
-    if (mod(i,N) == 0) then 
-      j = j+1
-      BE(j) = BE_tmp ! record energy every sweep
-      call write_lattice(S) ! write lattice to pipe
-    endif
+   ! if (mod(i,N) == 0) then 
+   !   j = j+1
+   !   BE(j) = BE_tmp ! record energy every sweep
+   !   call write_lattice(S) ! write lattice to pipe
+    !endif
   enddo
   call system_clock(end_time)
 
