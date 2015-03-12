@@ -27,17 +27,17 @@ program main
 
   ! initialize some needed variables
   j = 1
- ! BE(j) = BE_tmp
-  !t = (/(i,i=0,steps)/)
+  ! BE(j) = BE_tmp
+  ! t = (/(i,i=0,steps)/)
   p = 1 - exp(-2._dp*BJ)
 
   call system_clock(start_time)
   do i=1,steps
     call gen_config(S,dE,p)
-!    BE_tmp = BE_tmp + dE
- !   j = j+1
-  !  BE(j) = BE_tmp ! record energy every sweep
-    if (mod(i,100)==0) call write_lattice(S) ! write lattice to pipe
+    ! BE_tmp = BE_tmp + dE
+    ! j = j+1
+    ! BE(j) = BE_tmp ! record energy every sweep
+    if (mod(i,N)==0) call write_lattice(S) ! write lattice to pipe
   enddo
   call system_clock(end_time)
 
