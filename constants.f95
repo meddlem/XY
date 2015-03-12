@@ -12,6 +12,6 @@ module constants
   integer, parameter :: L = 100 ! lattice side
   integer, parameter :: N = L**2 ! number of spins
 
-  integer, parameter :: sweeps = 1000 ! number of sweeps through lattice 
+  integer, parameter :: sweeps = 10000 ! number of sweeps through lattice 
   integer, parameter :: steps = sweeps*N ! number of iterations
 end module
