@@ -5,9 +5,9 @@ module markov
   public :: gen_config
 
 contains
-  subroutine gen_config(S,m,dE,p)
+  subroutine gen_config(S,m,p)
     integer, intent(inout) :: S(:,:)
-    real(dp), intent(out) :: m, dE
+    real(dp), intent(out) :: m
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
@@ -16,8 +16,6 @@ contains
     allocate(C(N,2))
 
     ! initialize variables 
-    dE = 0._dp ! init dE, 
-    !need to implement calculation of dE based on bonds with neighbors?
     i = 1 ! labels spin in cluster
     s_cl = 1 ! number of spins in cluster
     C = 0 ! init array that holds indices of all spins in cluster
