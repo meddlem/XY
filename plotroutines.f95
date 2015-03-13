@@ -5,15 +5,12 @@ module plotroutines
   public :: line_plot, write_lattice, close_lattice_plot, animate_lattice
 
 contains
-  subroutine animate_lattice(S,title)
-    integer, intent(in) :: S(:,:)
+  subroutine animate_lattice(title)
     character(*), intent(in) :: title
     integer :: ret
     
     ! creates fifo pipe: plotfifo.dat
     call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
-    
-    call write_lattice(S) ! write spin config to pipe
     
     ! create a gnuplot command file
     open(10,access = 'sequential',file = 'matplot.plt')
@@ -35,6 +32,7 @@ contains
     ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'splot "< cat plotfifo.dat" matrix with image'
+      write(10,*) 'pause 0.1'
       write(10,*) 'reread'
     close(10)
     

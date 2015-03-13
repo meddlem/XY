@@ -22,7 +22,7 @@ program main
   call user_in(BJ,h)
   call init_random_seed()
   call init_lattice(S)
-  call animate_lattice(S,'')
+  call animate_lattice('')
   
   call run_sim(S,BE,BJ,h,t,m,runtime)
   
