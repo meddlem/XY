@@ -2,29 +2,9 @@ module initialize
   use constants
   implicit none
   private
-  public :: init_random_seed, init_lattice, init_energy, init_vals
+  public :: init_random_seed, init_lattice, init_vals
 
 contains
-  subroutine init_energy(BE,S,BJ,h)
-    real(dp), intent(out) :: BE
-    integer, intent(in) :: S(:,:)
-    real(dp), intent(in) :: h, BJ
-    integer :: i, j
-
-    if (size(S,1) < 2) return !check
-    
-    BE = 0._dp ! initialze energy 
-    
-    do i = 2,L+1
-      do j = 2,L+1
-        BE = BE - BJ*S(i,j)*(S(i-1,j) + S(i+1,j) + S(i,j-1) + S(i,j+1))
-      enddo
-    enddo
-
-    BE = 0.5_dp*BE ! account for double counting of pairs
-    BE = BE - h*sum(S) ! add external field
-  end subroutine
-
   subroutine init_vals(dE_vals,BF_vals,BJ,h)
     real(dp), intent(out) :: dE_vals(:,:), BF_vals(:,:)
     real(dp), intent(in) :: BJ, h

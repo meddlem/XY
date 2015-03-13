@@ -1,6 +1,7 @@
 program main
   use constants
   use initialize
+  use main_subroutines
   use markov
   use plotroutines
   use io
@@ -23,7 +24,7 @@ program main
   call user_in(BJ,h)
   call init_random_seed()
   call init_lattice(S)
-  call init_energy(BE(1),S,BJ,h)
+  call calc_energy(BE(1),S,BJ,h)
   call animate_lattice(S,'')
 
   ! initialize some needed variables
@@ -40,7 +41,7 @@ program main
     if (mod(i,meas_step)==0) then
       j = j+1
       m(j) = m_tmp
-      call init_energy(BE(j),S,BJ,h)
+      call calc_energy(BE(j),S,BJ,h)
     endif
     if (mod(i,N/10)==0) call write_lattice(S) ! write lattice to pipe
   enddo
