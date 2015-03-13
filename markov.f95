@@ -54,7 +54,7 @@ contains
     call random_spin(x) ! start cluster by choosing 1 spin
 
     S_init = S(x(1),x(2)) ! save state of chosen spin
-    C(1,:) = x ! add spin to cluster     
+    C(1,:) = x ! add chosen spin to cluster     
     S(x(1),x(2)) = -S_init ! flip initial spin
     
     do while (i<=s_cl)
@@ -63,7 +63,7 @@ contains
       
       ! iterate over neighbors of x
       do j = 1,4 
-        if (S(nn(j,1),nn(j,2))==S_init) then 
+        if (S(nn(j,1),nn(j,2)) == S_init) then 
           call random_number(r)
 
           if (r<p) then ! add spin to cluster with probability p
@@ -92,17 +92,6 @@ contains
     x = x + 1 ! adjust for zero padding
   end subroutine
 
-  function nn_idx(x)
-    ! returns indices of nearest neighbors of x_ij
-    integer, intent(in) :: x(2)
-    integer :: nn_idx(4,2)
-
-    nn_idx(1,:) = x + [1,0] 
-    nn_idx(2,:) = x + [0,1] 
-    nn_idx(3,:) = x - [1,0] 
-    nn_idx(4,:) = x - [0,1] 
-  end function
-
   subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
@@ -122,4 +111,15 @@ contains
     BE = 0.5_dp*BE ! account for double counting of pairs
     BE = BE - h*sum(S) ! add external field
   end subroutine
+  
+  function nn_idx(x)
+    ! returns indices of nearest neighbors of x_ij
+    integer, intent(in) :: x(2)
+    integer :: nn_idx(4,2)
+
+    nn_idx(1,:) = x + [1,0] 
+    nn_idx(2,:) = x + [0,1] 
+    nn_idx(3,:) = x - [1,0] 
+    nn_idx(4,:) = x - [0,1] 
+  end function
 end module

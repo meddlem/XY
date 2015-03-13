@@ -9,7 +9,7 @@ module constants
   integer, parameter :: dp = selected_real_kind(15,307)
   integer, parameter :: lng = selected_int_kind(8)
 
-  integer, parameter :: L = 120 ! lattice side
+  integer, parameter :: L = 96 ! lattice side
   integer, parameter :: N = L**2 ! number of spins
 
   integer, parameter :: meas_step = 100 ! interval between measurements
