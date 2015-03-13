@@ -10,11 +10,10 @@ PROG = main #program name
 #required objects: 
 OBJS =
 OBJS += constants.o
+OBJS += plotroutines.o
 OBJS += io.o
 OBJS += initialize.o
-OBJS += main_subroutines.o
 OBJS += markov.o
-OBJS += plotroutines.o
 OBJS += main.o
 
 all: $(PROG)

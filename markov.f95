@@ -1,13 +1,44 @@
 module markov 
   use constants
+  use plotroutines
   implicit none
   private
-  public :: gen_config
+  public :: run_sim, gen_config
 
 contains
+  subroutine run_sim(S,BE,BJ,h,t,m,runtime)
+    integer, intent(inout) :: S(:,:)
+    real(dp), intent(inout) :: BE(:) 
+    integer, intent(out) :: t(:), m(:), runtime
+    real(dp), intent(inout) :: BJ, h
+    real(dp) :: p
+    integer :: i, j, start_time, m_tmp, end_time
+  
+    ! initialize needed variables
+    j = 0
+    h = 0._dp ! overwrite user setting, just in case 
+    t = (/(i,i=0,n_meas-1)/)
+    p = 1 - exp(-2._dp*BJ)
+
+    call system_clock(start_time)
+    do i=1,steps
+      call gen_config(S,m_tmp,p)
+
+      if (mod(i,meas_step)==0) then
+        j = j+1
+        m(j) = m_tmp
+        call calc_energy(BE(j),S,BJ,h)
+      endif
+      if (mod(i,N/10)==0) call write_lattice(S) ! write lattice to pipe
+    enddo
+    
+    call system_clock(end_time)
+    runtime = (end_time - start_time)/1000
+  end subroutine
+
   subroutine gen_config(S,m,p)
     integer, intent(inout) :: S(:,:)
-    real(dp), intent(out) :: m
+    integer, intent(out) :: m
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
@@ -71,4 +102,24 @@ contains
     nn_idx(3,:) = x - [1,0] 
     nn_idx(4,:) = x - [0,1] 
   end function
+
+  subroutine calc_energy(BE,S,BJ,h)
+    real(dp), intent(out) :: BE
+    integer, intent(in) :: S(:,:)
+    real(dp), intent(in) :: h, BJ
+    integer :: i, j
+
+    if (size(S,1) < 2) return !check
+    
+    BE = 0._dp ! initialze energy 
+    
+    do i = 2,L+1
+      do j = 2,L+1
+        BE = BE - BJ*S(i,j)*(S(i-1,j) + S(i+1,j) + S(i,j-1) + S(i,j+1))
+      enddo
+    enddo
+
+    BE = 0.5_dp*BE ! account for double counting of pairs
+    BE = BE - h*sum(S) ! add external field
+  end subroutine
 end module
