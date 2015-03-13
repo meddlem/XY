@@ -5,31 +5,30 @@ module markov
   public :: gen_config
 
 contains
-  subroutine gen_config(S,dE,p)
+  subroutine gen_config(S,m,dE,p)
     integer, intent(inout) :: S(:,:)
-    real(dp), intent(out) :: dE
+    real(dp), intent(out) :: m, dE
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
-    integer :: i, j, S_init, s_cl, s_add, x(2), nn(4,2)
+    integer :: i, j, S_init, s_cl, x(2), nn(4,2)
     real(dp) :: r
     
     allocate(C(N,2))
 
     ! initialize variables 
-    dE = 0._dp ! init dE
+    dE = 0._dp ! init dE, 
+    !need to implement calculation of dE based on bonds with neighbors?
     i = 1 ! labels spin in cluster
     s_cl = 1 ! number of spins in cluster
-    s_add = 1 ! number of spins added in 1 sweep over nearest neighbors
     C = 0 ! init array that holds indices of all spins in cluster
 
     call random_spin(x) ! start cluster by choosing 1 spin
 
-    S_init = S(x(1),x(2)) ! save state of orig spin
+    S_init = S(x(1),x(2)) ! save state of chosen spin
     C(1,:) = x ! add spin to cluster     
     S(x(1),x(2)) = -S_init ! flip initial spin
     
-    do while ((s_add /= 0) .or. (i<=s_cl))
-      s_add = 0
+    do while (i<=s_cl)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
@@ -38,17 +37,18 @@ contains
         if (S(nn(j,1),nn(j,2))==S_init) then 
           call random_number(r)
 
-          if (r<p) then  
+          if (r<p) then ! add spin to cluster with probability p
             s_cl = s_cl+1
-            s_add = s_add+1
-            C(s_cl,:) = nn(j,:) ! add spin to cluster with probability p
-
-            S(nn(j,1),nn(j,2)) = -S_init ! flip spin so it's not visited again
+            C(s_cl,:) = nn(j,:) 
+            
+            S(nn(j,1),nn(j,2)) = -S_init ! flip spin
           endif
         endif
       enddo
       i = i+1 ! move to next spin in cluster
     enddo 
+
+    m = sum(S) ! calculate instantaneous magnetization
     deallocate(C)
   end subroutine
 

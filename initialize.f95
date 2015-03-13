@@ -51,8 +51,8 @@ contains
     S_tmp = -1
 
     call random_number(u)
-    !where (u > 0.5_dp) S_tmp = 1
-    if (u(1,1)>0.5_dp) S_tmp = 1
+    where (u > 0.5_dp) S_tmp = 1
+    ! if (u(1,1)>0.5_dp) S_tmp = 1
     S(2:L+1,2:L+1) = S_tmp ! add zero padding
 
     deallocate(u,S_tmp)
