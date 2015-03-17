@@ -6,12 +6,13 @@ module markov
   public :: run_sim, gen_config
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,m,runtime)
+  subroutine run_sim(S,BE,BJ,h,t,m,runtime,corr)
     integer, intent(inout) :: S(:,:)
     real(dp), intent(inout) :: BE(:) 
+    real(dp), intent(out) :: corr(25)
     integer, intent(out) :: t(:), m(:), runtime
     real(dp), intent(inout) :: BJ, h
-    real(dp) :: p
+    real(dp) :: p, g_tmp(25), g(n_meas,25)
     integer :: i, j, start_time, m_tmp, end_time
   
     ! initialize needed variables
@@ -22,23 +23,26 @@ contains
 
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,m_tmp,p)
+      call gen_config(S,m_tmp,p,g_tmp)
 
       if (mod(i,meas_step)==0) then
         j = j+1
+        g(j,:) = g_tmp
         m(j) = m_tmp
         call calc_energy(BE(j),S,BJ,h)
       endif
       if (mod(i,N/10)==0) call write_lattice(S) ! write lattice to pipe
-    enddo
-    
+    enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
+    
+    corr = sum(g(100:n_meas,:),1)/(n_meas-100) ! ignore first measurements
   end subroutine
 
-  subroutine gen_config(S,m,p)
+  subroutine gen_config(S,m,p,g)
     integer, intent(inout) :: S(:,:)
     integer, intent(out) :: m
+    real(dp), intent(out) :: g(25)
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
@@ -78,6 +82,7 @@ contains
     enddo 
 
     m = sum(S) ! calculate instantaneous magnetization
+    g = S(50,50)*(S(50:74,50)+S(50,50:74))*0.5_dp ! correlation function at MC step
     deallocate(C)
   end subroutine
 
