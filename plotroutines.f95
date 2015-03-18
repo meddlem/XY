@@ -83,7 +83,7 @@ contains
     ymin = minval(y1)
     ymax = maxval(y1)
 
-    xrange = [0._dp, xmax+(xmax-xmin)*0.1_dp]
+    xrange = [xmin-(xmax-xmin)*0.1_dp, xmax+(xmax-xmin)*0.1_dp]
     yrange = [ymin-(ymax-ymin)*0.1_dp, ymax+(ymax-ymin)*0.1_dp]
 
     open(10,access = 'sequential',file = 'xydata.dat')

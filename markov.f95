@@ -6,37 +6,42 @@ module markov
   public :: run_sim, gen_config
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,m,runtime,corr)
+  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss)
     integer, intent(inout) :: S(:,:)
-    real(dp), intent(inout) :: BE(:) 
-    real(dp), intent(out) :: corr(25)
+    real(dp), intent(inout) :: BE(:), BJ, h
+    real(dp), intent(out) :: c_ss(:), r(:) 
     integer, intent(out) :: t(:), m(:), runtime
-    real(dp), intent(inout) :: BJ, h
-    real(dp) :: p, g(n_meas,25)
+    real(dp) :: p, offset, err_alpha, alpha
+    real(dp), allocatable :: g(:,:)
     integer :: i, j, start_time, m_tmp, end_time
-  
+    
+    allocate(g(n_meas,r_max))
     ! initialize needed variables
     j = 0
     h = 0._dp ! overwrite user setting, just in case 
     t = (/(i,i=0,n_meas-1)/)
+    r = real((/(i,i=1,r_max)/),dp)
     p = 1 - exp(-2._dp*BJ)
 
     call system_clock(start_time)
     do i=1,steps
       call gen_config(S,m_tmp,p)
 
-      if (mod(i,meas_step)==0) then
+      if (mod(i,meas_step) == 0) then
         j = j+1
-        g(j,:) = S(50,50)*(S(50:74,50)+S(50,50:74))*0.5_dp ! correlation function at MC step
         m(j) = m_tmp
+        call s_corr(g(j,:),S)
         call calc_energy(BE(j),S,BJ,h)
       endif
-      if (mod(i,N/10)==0)  call write_lattice(S) ! write lattice to pipe
+      if (mod(i,N/10) == 0)  call write_lattice(S) ! write lattice to pipe
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
     
-    corr = sum(g(100:n_meas,:),1)/(n_meas-100) ! ignore first measurements
+    c_ss = sum(g(meas_start:n_meas,:),1)/(n_meas-meas_start) 
+    call lin_fit(alpha,err_alpha,offset,-log(c_ss),log(r))
+    print *, 'slope =', alpha
+    deallocate(g)
   end subroutine
 
   subroutine gen_config(S,m,p)
@@ -95,7 +100,7 @@ contains
     x = x + 1 ! adjust for zero padding
   end subroutine
 
-  subroutine calc_energy(BE,S,BJ,h)
+  pure subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: h, BJ
@@ -115,7 +120,7 @@ contains
     BE = BE - h*sum(S) ! add external field
   end subroutine
   
-  function nn_idx(x)
+  pure function nn_idx(x)
     ! returns indices of nearest neighbors of x_ij
     integer, intent(in) :: x(2)
     integer :: nn_idx(4,2)
@@ -125,4 +130,42 @@ contains
     nn_idx(3,:) = x - [1,0] 
     nn_idx(4,:) = x - [0,1] 
   end function
+
+  pure subroutine s_corr(g,S)
+    real(dp), intent(out) :: g(:)
+    integer, intent(in) :: S(:,:)
+    real(dp) :: g_tmp(n_corr,r_max)
+    integer :: i, r_0, r_1
+     
+    r_0 = (L-n_corr)/2
+    r_1 = r_0 + 1
+
+    do i=1,n_corr
+      g_tmp(i,:) = S(i+r_0,i+r_0)*&
+        (S(i+r_0,i+r_1:i+r_0+r_max) + S(i+r_1:i+r_0+r_max,i+r_0))/2._dp
+    enddo
+
+    g = sum(g_tmp,1)/n_corr 
+  end subroutine
+
+  pure subroutine lin_fit(slope,err_slope,offset,y,x)
+    real(dp), intent(out) :: slope, err_slope, offset
+    real(dp), intent(in) :: y(:), x(:)
+    real(dp) :: mu_x, mu_y, ss_yy, ss_xx, ss_yx, s
+    ! linear regression
+    ! see also: http://mathworld.wolfram.com/LeastSquaresFitting.html
+
+    mu_x = sum(x)/size(x)
+    mu_y = sum(y)/size(y)
+
+    ss_yy = sum((y - mu_y)**2)
+    ss_xx = sum((x - mu_x)**2)
+    ss_yx = sum((x - mu_x)*(y - mu_y))
+    
+    slope = ss_yx/ss_xx
+    offset = mu_y - slope*mu_x
+    s = sqrt((ss_yy - slope*ss_yx)/(size(x)-2))
+
+    err_slope = s/(sqrt(ss_xx)*6._dp) ! error in slope calc
+  end subroutine
 end module
