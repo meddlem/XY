@@ -12,7 +12,7 @@ contains
     real(dp), intent(out) :: corr(25)
     integer, intent(out) :: t(:), m(:), runtime
     real(dp), intent(inout) :: BJ, h
-    real(dp) :: p, g_tmp(25), g(n_meas,25)
+    real(dp) :: p, g(n_meas,25)
     integer :: i, j, start_time, m_tmp, end_time
   
     ! initialize needed variables
@@ -23,15 +23,15 @@ contains
 
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,m_tmp,p,g_tmp)
+      call gen_config(S,m_tmp,p)
 
       if (mod(i,meas_step)==0) then
         j = j+1
-        g(j,:) = g_tmp
+        g(j,:) = S(50,50)*(S(50:74,50)+S(50,50:74))*0.5_dp ! correlation function at MC step
         m(j) = m_tmp
         call calc_energy(BE(j),S,BJ,h)
       endif
-      if (mod(i,N/10)==0) call write_lattice(S) ! write lattice to pipe
+      if (mod(i,N/10)==0)  call write_lattice(S) ! write lattice to pipe
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
@@ -39,10 +39,9 @@ contains
     corr = sum(g(100:n_meas,:),1)/(n_meas-100) ! ignore first measurements
   end subroutine
 
-  subroutine gen_config(S,m,p,g)
+  subroutine gen_config(S,m,p)
     integer, intent(inout) :: S(:,:)
     integer, intent(out) :: m
-    real(dp), intent(out) :: g(25)
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
@@ -82,7 +81,6 @@ contains
     enddo 
 
     m = sum(S) ! calculate instantaneous magnetization
-    g = S(50,50)*(S(50:74,50)+S(50,50:74))*0.5_dp ! correlation function at MC step
     deallocate(C)
   end subroutine
 
