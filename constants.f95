@@ -18,5 +18,5 @@ module constants
   integer, parameter :: meas_start = 100 ! start measurement after .. 
 
   integer, parameter :: n_corr = 30 ! number of spins to calc correlation over (diagonal elements)
-  integer, parameter :: r_max = 5 ! distances over which to calc correlation function
+  integer, parameter :: r_max = 10 ! distances over which to calc correlation function
 end module

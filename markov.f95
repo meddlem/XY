@@ -6,10 +6,10 @@ module markov
   public :: run_sim, gen_config
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss)
+  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit)
     integer, intent(inout) :: S(:,:)
     real(dp), intent(inout) :: BE(:), BJ, h
-    real(dp), intent(out) :: c_ss(:), r(:) 
+    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:)
     integer, intent(out) :: t(:), m(:), runtime
     real(dp) :: p, offset, err_alpha, alpha
     real(dp), allocatable :: g(:,:)
@@ -38,8 +38,11 @@ contains
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
     
+    ! calculate correlation function 
     c_ss = sum(g(meas_start:n_meas,:),1)/(n_meas-meas_start) 
     call lin_fit(alpha,err_alpha,offset,-log(c_ss),log(r))
+    c_ss_fit = exp(-offset)*r**(-alpha)
+
     print *, 'slope =', alpha
     deallocate(g)
   end subroutine
@@ -72,6 +75,7 @@ contains
       ! iterate over neighbors of x
       do j = 1,4 
         if (S(nn(j,1),nn(j,2)) == S_init) then 
+          ! dit stuk kan in een try add subroutine
           call random_number(r)
 
           if (r<p) then ! add spin to cluster with probability p
@@ -97,22 +101,25 @@ contains
     call random_number(u)
     u = L*u + 0.5_dp
     x = nint(u) ! index of spin to flip
-    x = x + 1 ! adjust for zero padding
   end subroutine
 
   pure subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: h, BJ
-    integer :: i, j
+    integer :: i, j, k, nn(4,2)
 
     if (size(S,1) < 2) return !check
     
     BE = 0._dp ! initialze energy 
     
-    do i = 2,L+1
-      do j = 2,L+1
-        BE = BE - BJ*S(i,j)*(S(i-1,j) + S(i+1,j) + S(i,j-1) + S(i,j+1))
+    do i = 1,L
+      do j = 1,L
+        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
+        
+        do k = 1,4
+          BE = BE - BJ*S(i,j)*S(nn(k,1),nn(k,2))
+        enddo
       enddo
     enddo
 
@@ -121,14 +128,14 @@ contains
   end subroutine
   
   pure function nn_idx(x)
-    ! returns indices of nearest neighbors of x_ij
+    ! returns indices of nearest neighbors of x_ij, accounting for PBC
     integer, intent(in) :: x(2)
     integer :: nn_idx(4,2)
 
-    nn_idx(1,:) = x + [1,0] 
-    nn_idx(2,:) = x + [0,1] 
-    nn_idx(3,:) = x - [1,0] 
-    nn_idx(4,:) = x - [0,1] 
+    nn_idx(1,:) = merge(x + [1,0], 1, x(1) /= L)
+    nn_idx(2,:) = merge(x + [0,1], 1, x(2) /= L) 
+    nn_idx(3,:) = merge(x - [1,0], L, x(1) /= 1) 
+    nn_idx(4,:) = merge(x - [0,1], L, x(2) /= 1) 
   end function
 
   pure subroutine s_corr(g,S)

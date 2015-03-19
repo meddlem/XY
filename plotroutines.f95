@@ -47,8 +47,8 @@ contains
     write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
     
     open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
-      do i = 2,L+1
-        write(11,rowfmt) (S(i,j), j=2,L+1) ! write spin configuration to pipe 
+      do i = 1,L
+        write(11,rowfmt) (S(i,j), j=1,L) ! write spin configuration to pipe 
       enddo
     close(11)
   end subroutine

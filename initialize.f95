@@ -23,19 +23,16 @@ contains
   subroutine init_lattice(S)
     integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
-    integer, allocatable :: S_tmp(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
+    ! take into account PBC
 
-    allocate(u(L,L),S_tmp(L,L))
-    S = 0
-    S_tmp = -1
+    allocate(u(L,L))
+    S = -1
 
     call random_number(u)
-    where (u > 0.5_dp) S_tmp = 1
-    ! if (u(1,1)>0.5_dp) S_tmp = 1
-    S(2:L+1,2:L+1) = S_tmp ! add zero padding
-
-    deallocate(u,S_tmp)
+    where (u > 0.5_dp) S = 1
+    ! if (u(1,1)>0.5_dp) S = 1
+    deallocate(u)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github
