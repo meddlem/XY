@@ -24,7 +24,6 @@ contains
     integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
-    ! take into account PBC
 
     allocate(u(L,L))
     S = -1
