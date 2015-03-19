@@ -54,15 +54,12 @@ contains
     real(dp), intent(in) :: p
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
-    real(dp) :: r
     
     allocate(C(N,2))
-
     ! initialize variables 
     i = 1 ! labels spin in cluster
     s_cl = 1 ! number of spins in cluster
     C = 0 ! init array that holds indices of all spins in cluster
-
     call random_spin(x) ! start cluster by choosing 1 spin
 
     S_init = S(x(1),x(2)) ! save state of chosen spin
@@ -73,19 +70,8 @@ contains
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
-      ! iterate over neighbors of x
-      do j = 1,4 
-        if (S(nn(j,1),nn(j,2)) == S_init) then 
-          ! dit stuk kan in een try add subroutine
-          call random_number(r)
-
-          if (r<p) then ! add spin to cluster with probability p
-            s_cl = s_cl+1
-            C(s_cl,:) = nn(j,:) 
-            
-            S(nn(j,1),nn(j,2)) = -S_init ! flip spin
-          endif
-        endif
+      do j = 1,4 ! iterate over neighbors of x
+        call try_add(S,C,s_cl,S_init,nn(j,:),p)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo 
@@ -104,6 +90,24 @@ contains
     x = nint(u) ! index of spin to flip
   end subroutine
 
+  subroutine try_add(S,C,s_cl,S_init,s_idx,p)
+    integer, intent(inout) :: S(:,:), s_cl, C(:,:)
+    integer, intent(in) :: S_init, s_idx(:)
+    real(dp), intent(in) :: p
+    real(dp) :: r
+
+    if (S(s_idx(1),s_idx(2)) == S_init) then 
+      call random_number(r)
+
+      if (r<p) then ! add spin to cluster with probability p
+        s_cl = s_cl+1
+        C(s_cl,:) = s_idx 
+        
+        S(s_idx(1),s_idx(2)) = -S_init ! flip spin
+      endif
+    endif
+  end subroutine
+
   pure subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
@@ -113,11 +117,10 @@ contains
     if (size(S,1) < 2) return !check
     
     BE = 0._dp ! initialze energy 
-    
+
     do i = 1,L
       do j = 1,L
         nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
-        
         do k = 1,4
           BE = BE - BJ*S(i,j)*S(nn(k,1),nn(k,2))
         enddo
