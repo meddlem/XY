@@ -2,6 +2,7 @@ module markov
   use constants
   use main_routines
   use plotroutines
+  use omp_lib
   implicit none
   private
   public :: run_sim, gen_config
@@ -10,11 +11,12 @@ contains
   subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit)
     integer, intent(inout) :: S(:,:)
     real(dp), intent(inout) :: BE(:), BJ, h
-    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:)
     integer, intent(out) :: t(:), m(:), runtime
-    real(dp) :: p, offset, err_alpha, alpha
-    real(dp), allocatable :: g(:,:)
+    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:)
+
     integer :: i, j, start_time, m_tmp, end_time
+    real(dp), allocatable :: g(:,:)
+    real(dp) :: p, offset, err_alpha, alpha
     
     allocate(g(n_meas,r_max))
     ! initialize needed variables
@@ -34,7 +36,7 @@ contains
         call s_corr(g(j,:),S)
         call calc_energy(BE(j),S,BJ,h)
       endif
-      if (mod(i,N/10) == 0)  call write_lattice(S) ! write lattice to pipe
+      if (mod(i,N/100) == 0)  call write_lattice(S) ! write lattice to pipe
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
@@ -52,6 +54,7 @@ contains
     integer, intent(inout) :: S(:,:)
     integer, intent(out) :: m
     real(dp), intent(in) :: p
+
     integer, allocatable :: C(:,:)
     integer :: i, j, S_init, s_cl, x(2), nn(4,2)
     
@@ -74,7 +77,7 @@ contains
         call try_add(S,C,s_cl,S_init,nn(j,:),p)
       enddo
       i = i+1 ! move to next spin in cluster
-    enddo 
+    enddo
 
     m = sum(S) ! calculate instantaneous magnetization
     deallocate(C)
@@ -94,6 +97,7 @@ contains
     integer, intent(inout) :: S(:,:), s_cl, C(:,:)
     integer, intent(in) :: S_init, s_idx(:)
     real(dp), intent(in) :: p
+
     real(dp) :: r
 
     if (S(s_idx(1),s_idx(2)) == S_init) then 
@@ -112,6 +116,7 @@ contains
     real(dp), intent(out) :: BE
     integer, intent(in) :: S(:,:)
     real(dp), intent(in) :: h, BJ
+
     integer :: i, j, k, nn(4,2)
 
     if (size(S,1) < 2) return !check
@@ -134,6 +139,7 @@ contains
   pure function nn_idx(x)
     ! returns indices of nearest neighbors of x_ij, accounting for PBC
     integer, intent(in) :: x(2)
+
     integer :: nn_idx(4,2)
 
     nn_idx(1,:) = merge(x + [1,0], 1, x(1) /= L)
