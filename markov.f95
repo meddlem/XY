@@ -2,7 +2,6 @@ module markov
   use constants
   use main_routines
   use plotroutines
-  use omp_lib
   implicit none
   private
   public :: run_sim, gen_config
@@ -36,7 +35,8 @@ contains
         call s_corr(g(j,:),S)
         call calc_energy(BE(j),S,BJ,h)
       endif
-      if (mod(i,N/100) == 0)  call write_lattice(S) ! write lattice to pipe
+
+      if (mod(i,plot_interval) == 0) call write_lattice(S) ! write lattice to pipe
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
@@ -81,16 +81,6 @@ contains
 
     m = sum(S) ! calculate instantaneous magnetization
     deallocate(C)
-  end subroutine
-
-  subroutine random_spin(x)
-    ! returns index of randomly picked spin
-    integer, intent(out) :: x(:)
-    real(dp) :: u(2)
-
-    call random_number(u)
-    u = L*u + 0.5_dp
-    x = nint(u) ! index of spin to flip
   end subroutine
 
   subroutine try_add(S,C,s_cl,S_init,s_idx,p)
@@ -139,7 +129,6 @@ contains
   pure function nn_idx(x)
     ! returns indices of nearest neighbors of x_ij, accounting for PBC
     integer, intent(in) :: x(2)
-
     integer :: nn_idx(4,2)
 
     nn_idx(1,:) = merge(x + [1,0], 1, x(1) /= L)
@@ -147,4 +136,31 @@ contains
     nn_idx(3,:) = merge(x - [1,0], L, x(1) /= 1) 
     nn_idx(4,:) = merge(x - [0,1], L, x(2) /= 1) 
   end function
+  
+  subroutine random_spin(x)
+    ! returns index of randomly picked spin
+    integer, intent(out) :: x(:)
+
+    real(dp) :: u(2)
+
+    call random_number(u)
+    u = L*u + 0.5_dp
+    x = nint(u) ! index of spin to flip
+  end subroutine
+
+  pure subroutine s_corr(g,S)
+    real(dp), intent(out) :: g(:)
+    integer, intent(in) :: S(:,:)
+    real(dp) :: g_tmp(n_corr,r_max)
+    integer :: i, r_0, r_1
+     
+    r_0 = (L-n_corr)/2
+    r_1 = r_0 + 1
+
+    do i=1,n_corr
+      g_tmp(i,:) = S(i+r_0,i+r_0)*S(i+r_0,i+r_1:i+r_0+r_max) ! + S(i+r_1:i+r_0+r_max,i+r_0))/2._dp
+    enddo
+
+    g = sum(g_tmp,1)/n_corr 
+  end subroutine
 end module

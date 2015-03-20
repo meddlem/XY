@@ -2,26 +2,9 @@ module main_routines
   use constants
   implicit none
   private 
-  public :: s_corr, lin_fit
+  public :: lin_fit
 
 contains
-
-  pure subroutine s_corr(g,S)
-    real(dp), intent(out) :: g(:)
-    integer, intent(in) :: S(:,:)
-    real(dp) :: g_tmp(n_corr,r_max)
-    integer :: i, r_0, r_1
-     
-    r_0 = (L-n_corr)/2
-    r_1 = r_0 + 1
-
-    do i=1,n_corr
-      g_tmp(i,:) = S(i+r_0,i+r_0)*&
-        (S(i+r_0,i+r_1:i+r_0+r_max) + S(i+r_1:i+r_0+r_max,i+r_0))/2._dp
-    enddo
-
-    g = sum(g_tmp,1)/n_corr 
-  end subroutine
 
   pure subroutine lin_fit(slope,err_slope,offset,y,x)
     real(dp), intent(out) :: slope, err_slope, offset
