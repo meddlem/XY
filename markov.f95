@@ -4,18 +4,18 @@ module markov
   use plotroutines
   implicit none
   private
-  public :: run_sim, gen_config
+  public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit)
+  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,alpha)
     integer, intent(inout) :: S(:,:)
     real(dp), intent(inout) :: BE(:), BJ, h
     integer, intent(out) :: t(:), m(:), runtime
-    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:)
+    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:), alpha
 
     integer :: i, j, start_time, m_tmp, end_time
     real(dp), allocatable :: g(:,:)
-    real(dp) :: p, offset, err_alpha, alpha
+    real(dp) :: p, offset, err_alpha
     
     allocate(g(n_meas,r_max))
     ! initialize needed variables
@@ -46,7 +46,6 @@ contains
     call lin_fit(alpha,err_alpha,offset,-log(c_ss),log(r))
     c_ss_fit = exp(-offset)*r**(-alpha)
 
-    print *, 'slope =', alpha
     deallocate(g)
   end subroutine
 
@@ -95,8 +94,8 @@ contains
 
       if (r<p) then ! add spin to cluster with probability p
         s_cl = s_cl+1
+
         C(s_cl,:) = s_idx 
-        
         S(s_idx(1),s_idx(2)) = -S_init ! flip spin
       endif
     endif
@@ -131,10 +130,10 @@ contains
     integer, intent(in) :: x(2)
     integer :: nn_idx(4,2)
 
-    nn_idx(1,:) = merge(x + [1,0], 1, x(1) /= L)
-    nn_idx(2,:) = merge(x + [0,1], 1, x(2) /= L) 
-    nn_idx(3,:) = merge(x - [1,0], L, x(1) /= 1) 
-    nn_idx(4,:) = merge(x - [0,1], L, x(2) /= 1) 
+    nn_idx(1,:) = merge(x + [1,0], [1,x(2)], x(1) /= L)
+    nn_idx(2,:) = merge(x + [0,1], [x(1),1], x(2) /= L) 
+    nn_idx(3,:) = merge(x - [1,0], [L,x(2)], x(1) /= 1) 
+    nn_idx(4,:) = merge(x - [0,1], [x(1),L], x(2) /= 1) 
   end function
   
   subroutine random_spin(x)
@@ -158,7 +157,7 @@ contains
     r_1 = r_0 + 1
 
     do i=1,n_corr
-      g_tmp(i,:) = S(i+r_0,i+r_0)*S(i+r_0,i+r_1:i+r_0+r_max) ! + S(i+r_1:i+r_0+r_max,i+r_0))/2._dp
+      g_tmp(i,:) = S(i+r_0,i+r_0)*S(i+r_0,i+r_1:i+r_0+r_max) 
     enddo
 
     g = sum(g_tmp,1)/n_corr 
