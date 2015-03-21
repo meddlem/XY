@@ -18,6 +18,6 @@ module constants
   integer, parameter :: meas_start = 1000 ! start measurement after .. steps 
   integer, parameter :: plot_interval = 100 ! plot every .. steps
 
-  integer, parameter :: n_corr = 25 ! number of spins to calculate correlation over (diagonal elements)
-  integer, parameter :: r_max = 10 ! distances over which to calc correlation function
+  integer, parameter :: n_corr = 30 ! number of spins to calculate correlation over (diagonal elements)
+  integer, parameter :: r_max = 20 ! distances over which to calc correlation function
 end module
