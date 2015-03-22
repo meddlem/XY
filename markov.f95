@@ -7,15 +7,15 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,alpha)
+  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,nu)
     integer, intent(inout) :: S(:,:)
     real(dp), intent(inout) :: BE(:), BJ, h
     integer, intent(out) :: t(:), m(:), runtime
-    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:), alpha
+    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:), nu
 
     integer :: i, j, start_time, m_tmp, end_time
     real(dp), allocatable :: g(:,:)
-    real(dp) :: p, offset, err_alpha
+    real(dp) :: p, offset, err_nu
     
     allocate(g(n_meas,r_max))
     ! initialize needed variables
@@ -43,8 +43,8 @@ contains
     
     ! calculate correlation function 
     c_ss = sum(g(meas_start:n_meas,:),1)/(n_meas-meas_start) 
-    call lin_fit(alpha,err_alpha,offset,-log(c_ss),log(r))
-    c_ss_fit = exp(-offset)*r**(-alpha)
+    call lin_fit(nu,err_nu,offset,-log(c_ss),log(r))
+    c_ss_fit = exp(-offset)*r**(-nu)
 
     deallocate(g)
   end subroutine

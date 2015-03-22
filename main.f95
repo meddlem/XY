@@ -13,7 +13,7 @@ program main
   ! S: array containing Spins indexed as row, column
 
   real(dp), allocatable :: BE(:), c_ss(:), r(:), c_ss_fit(:)
-  real(dp)              :: BJ, h, alpha
+  real(dp)              :: BJ, h, nu
   integer, allocatable  :: S(:,:), m(:), t(:)
   integer               :: runtime
   
@@ -25,10 +25,10 @@ program main
   call init_lattice(S)
   call animate_lattice('')
   
-  call run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,alpha)
+  call run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,nu)
   
   call close_lattice_plot()
-  call results_out(BJ,BE(n_meas),h,runtime,alpha)
+  call results_out(BJ,BE(n_meas),h,runtime,nu)
   call line_plot(real(t,dp),BE,'t','energy','','',1)
   call line_plot(real(t,dp),real(m,dp),'t','magnetization','','',2)
   call line_plot(r,c_ss,'r','corr','corr','',3,c_ss_fit,'fit')
