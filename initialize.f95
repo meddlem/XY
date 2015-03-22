@@ -11,11 +11,7 @@ contains
     integer :: i, j 
 
     ! calculate possible values of dE and boltzmann factor 
-    do i=1,9
-      do j=1,2 
-        dE_vals(i,j) = - 2._dp*BJ*(i-5) - 2._dp*h*(j*2-3) 
-      enddo
-    enddo
+    forall (i=1:9,j=1:2) dE_vals(i,j) = - 2._dp*BJ*(i-5) - 2._dp*h*(j*2-3) 
         
     BF_vals = exp(-dE_vals)
   end subroutine
@@ -24,13 +20,11 @@ contains
     integer, intent(out) :: S(:,:)
     real(dp), allocatable :: u(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
-
     allocate(u(L,L))
     S = -1
 
     call random_number(u)
     where (u > 0.5_dp) S = 1
-    ! if (u(1,1)>0.5_dp) S = 1
     deallocate(u)
   end subroutine 
 
