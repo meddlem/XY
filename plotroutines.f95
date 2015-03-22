@@ -20,18 +20,21 @@ contains
       write(10,*) 'set rmargin screen 0.9'
       write(10,*) 'set tmargin screen 0.9'
       write(10,*) 'set bmargin screen 0.1'
-      write(10,*) 'set palette maxcolors 2'
-      write(10,*) 'set palette defined ( -1 "#751975", 1 "#FF6600")'
-      write(10,*) 'set cbrange [-1:1]'
-      write(10,*) 'set cbtics ("+" 1, "-" -1)'
+      write(10,*) 'set xrange [0:25]'
+      write(10,*) 'set yrange [0:25]'
+      write(10,*) 'set palette color'
       write(10,*) 'set title "'//TRIM(title)//'"'
       write(10,*) 'set pm3d map'
+      write(10,*) 'h = 0.1' ! define stuf for plotting vectors
+      write(10,*) 'xf(phi) = h*cos(phi)'
+      write(10,*) 'yf(phi) = h*sin(phi)'
       write(10,*) 'load "loop.plt"'
     close(10)
     
     ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
-      write(10,*) 'splot "< cat plotfifo.dat" matrix with image'
+      write(10,*) 'plot "< cat plotfifo.dat" \'
+      write(10,*) 'with vectors head size 0.1,20,60'
       write(10,*) 'pause 0.1'
       write(10,*) 'reread'
     close(10)
@@ -41,14 +44,17 @@ contains
   end subroutine
   
   subroutine write_lattice(S)
-    integer, intent(in) :: S(:,:)
+    real(dp), intent(in) :: S(:,:)
     integer :: i, j
     character(30) :: rowfmt
-    write(rowfmt, '(A,I4,A)') '(',L,'(1X,I3))' 
+    write(rowfmt, '(A)') '(I3,1X,I3,2X,F6.3,2X,F6.3)' 
     
+    ! write to pipe 
     open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
       do i = 1,L
-        write(11,rowfmt) (S(i,j), j=1,L) ! write spin configuration to pipe 
+        do j = 1,L
+          write(11,rowfmt) i, j, 0.4_dp*cos(S(i,j)), 0.4_dp*sin(S(i,j)) 
+        enddo
       enddo
     close(11)
   end subroutine

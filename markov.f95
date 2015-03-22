@@ -7,32 +7,26 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,r,m,runtime,c_ss,c_ss_fit,nu)
-    integer, intent(inout) :: S(:,:)
-    real(dp), intent(inout) :: BE(:), BJ, h
-    integer, intent(out) :: t(:), m(:), runtime
-    real(dp), intent(out) :: c_ss(:), r(:), c_ss_fit(:), nu
+  subroutine run_sim(S,BE,BJ,h,t,m,runtime)
+    real(dp), intent(inout) :: S(:,:), BE(:), BJ, m(:), h
+    integer, intent(inout) :: t(:)
+    integer, intent(out) :: runtime
 
-    integer :: i, j, start_time, m_tmp, end_time
-    real(dp), allocatable :: g(:,:)
-    real(dp) :: p, offset, err_nu
+    integer :: i, j, start_time, end_time
+    real(dp) :: m_tmp
     
-    allocate(g(n_meas,r_max))
     ! initialize needed variables
     j = 0
     h = 0._dp ! overwrite user setting, just in case 
     t = (/(i,i=0,n_meas-1)/)
-    r = real((/(i,i=1,r_max)/),dp)
-    p = 1 - exp(-2._dp*BJ)
 
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,m_tmp,p)
+      call gen_config(S,m_tmp,BJ)
 
       if (mod(i,meas_step) == 0) then
         j = j+1
         m(j) = m_tmp
-        call s_corr(g(j,:),S)
         call calc_energy(BE(j),S,BJ,h)
       endif
 
@@ -40,73 +34,76 @@ contains
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
-    
-    ! calculate correlation function 
-    c_ss = sum(g(meas_start:n_meas,:),1)/(n_meas-meas_start) 
-    call lin_fit(nu,err_nu,offset,-log(c_ss),log(r))
-    c_ss_fit = exp(-offset)*r**(-nu)
-
-    deallocate(g)
   end subroutine
 
-  subroutine gen_config(S,m,p)
-    integer, intent(inout) :: S(:,:)
-    integer, intent(out) :: m
-    real(dp), intent(in) :: p
+  subroutine gen_config(S,m,BJ)
+    real(dp), intent(inout) :: S(:,:)
+    real(dp), intent(in) :: BJ
+    real(dp), intent(out) :: m
 
     integer, allocatable :: C(:,:)
-    integer :: i, j, S_init, s_cl, x(2), nn(4,2)
+    logical, allocatable :: C_added(:,:)
+    integer :: i, j, s_cl, x(2), nn(4,2)
+    real(dp) :: a
     
-    allocate(C(N,2))
+    allocate(C(N,2),C_added(N,N))
     ! initialize variables 
     i = 1 ! labels spin in cluster
     s_cl = 1 ! number of spins in cluster
+    C_added = .false. ! tells us if spin was already considered for cluster
     C = 0 ! init array that holds indices of all spins in cluster
+
     call random_spin(x) ! start cluster by choosing 1 spin
 
-    S_init = S(x(1),x(2)) ! save state of chosen spin
-    C(1,:) = x ! add chosen spin to cluster     
-    S(x(1),x(2)) = -S_init ! flip initial spin
+    C(1,:) = x
+    C_added(x(1),x(2)) = .true. ! add chosen spin to cluster     
+    S(x(1),x(2)) = -S(x(1),x(2)) ! flip initial spin
+    a = cos(-S(x(1),x(2))) 
     
     do while (i<=s_cl)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over neighbors of x
-        call try_add(S,C,s_cl,S_init,nn(j,:),p)
+        call try_add(S,C,C_added,s_cl,a,nn(j,:),BJ)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
 
     m = sum(S) ! calculate instantaneous magnetization
-    deallocate(C)
+    deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,s_cl,S_init,s_idx,p)
-    integer, intent(inout) :: S(:,:), s_cl, C(:,:)
-    integer, intent(in) :: S_init, s_idx(:)
-    real(dp), intent(in) :: p
+  subroutine try_add(S,C,C_added,s_cl,a,s_idx,BJ)
+    real(dp), intent(inout) :: S(:,:)
+    integer, intent(inout) :: s_cl, C(:,:)
+    logical, intent(inout) :: C_added(:,:)
+    integer, intent(in) :: s_idx(:)
+    real(dp), intent(in) :: a, BJ
 
-    real(dp) :: r
-
-    if (S(s_idx(1),s_idx(2)) == S_init) then 
+    real(dp) :: r, p
+    ! je moet op een of andere manier zorgen dat je maar 1x dezelfde spin beschouwd
+    
+    if (C_added(s_idx(1),s_idx(2)) .eqv. .false.) then
+      p = 1 - exp(-2*BJ*a*cos(S(s_idx(1),s_idx(2))))
       call random_number(r)
 
       if (r<p) then ! add spin to cluster with probability p
         s_cl = s_cl+1
+        C_added(s_idx(1),s_idx(2)) = .true. 
 
         C(s_cl,:) = s_idx 
-        S(s_idx(1),s_idx(2)) = -S_init ! flip spin
+        S(s_idx(1),s_idx(2)) = -S(s_idx(1),s_idx(2))  ! flip spin
       endif
     endif
   end subroutine
 
   pure subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
-    integer, intent(in) :: S(:,:)
-    real(dp), intent(in) :: h, BJ
+    real(dp), intent(in) :: S(:,:), h, BJ
 
     integer :: i, j, k, nn(4,2)
+    ! nog aanpassen voor xy model
 
     if (size(S,1) < 2) return !check
     
@@ -147,19 +144,4 @@ contains
     x = nint(u) ! index of spin to flip
   end subroutine
 
-  pure subroutine s_corr(g,S)
-    real(dp), intent(out) :: g(:)
-    integer, intent(in) :: S(:,:)
-    real(dp) :: g_tmp(n_corr,r_max)
-    integer :: i, r_0, r_1
-     
-    r_0 = (L-n_corr)/2
-    r_1 = r_0 + 1
-
-    do i=1,n_corr
-      g_tmp(i,:) = S(i+r_0,i+r_0)*S(i+r_0,i+r_1:i+r_0+r_max) 
-    enddo
-
-    g = sum(g_tmp,1)/n_corr 
-  end subroutine
 end module
