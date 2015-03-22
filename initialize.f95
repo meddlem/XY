@@ -7,15 +7,17 @@ module initialize
 contains
 
   subroutine init_lattice(S)
-    real(dp), intent(out) :: S(:,:)
-    real(dp), allocatable :: u(:,:)
+    real(dp), intent(out) :: S(:,:,:)
+    real(dp), allocatable :: u(:,:), theta(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
-    allocate(u(L,L))
+    allocate(u(L,L),theta(L,L))
 
     call random_number(u)
-    S = 2*pi*u ! random angles between 0 and pi
+    theta = 2._dp*pi*u ! random angles between 0 and pi
+    S(:,:,1) = cos(theta) 
+    S(:,:,2) = sin(theta)
     
-    deallocate(u)
+    deallocate(u,theta)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github

@@ -8,7 +8,7 @@ module markov
 
 contains
   subroutine run_sim(S,BE,BJ,h,t,m,runtime)
-    real(dp), intent(inout) :: S(:,:), BE(:), BJ, m(:), h
+    real(dp), intent(inout) :: S(:,:,:), BE(:), BJ, m(:), h
     integer, intent(inout) :: t(:)
     integer, intent(out) :: runtime
 
@@ -37,7 +37,7 @@ contains
   end subroutine
 
   subroutine gen_config(S,m,BJ)
-    real(dp), intent(inout) :: S(:,:)
+    real(dp), intent(inout) :: S(:,:,:)
     real(dp), intent(in) :: BJ
     real(dp), intent(out) :: m
 
@@ -57,7 +57,8 @@ contains
 
     C(1,:) = x
     C_added(x(1),x(2)) = .true. ! add chosen spin to cluster     
-    S(x(1),x(2)) = -S(x(1),x(2)) ! flip initial spin
+
+    S(x(1),x(2),:) = S(x(1),x(2)) - 2._dp*(..) ! flip initial spin
     a = cos(-S(x(1),x(2))) 
     
     do while (i<=s_cl)
@@ -75,17 +76,18 @@ contains
   end subroutine
 
   subroutine try_add(S,C,C_added,s_cl,a,s_idx,BJ)
-    real(dp), intent(inout) :: S(:,:)
+    real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout) :: s_cl, C(:,:)
     logical, intent(inout) :: C_added(:,:)
     integer, intent(in) :: s_idx(:)
     real(dp), intent(in) :: a, BJ
 
-    real(dp) :: r, p
-    ! je moet op een of andere manier zorgen dat je maar 1x dezelfde spin beschouwd
+    real(dp) :: r, p, b
+    ! deze def van spin flip klopt niet 
     
     if (C_added(s_idx(1),s_idx(2)) .eqv. .false.) then
-      p = 1 - exp(-2*BJ*a*cos(S(s_idx(1),s_idx(2))))
+      b = a*cos(S(s_idx(1),s_idx(2)))
+      p = 1 - exp(-2*BJ*min(b,0._dp)) 
       call random_number(r)
 
       if (r<p) then ! add spin to cluster with probability p
@@ -100,26 +102,27 @@ contains
 
   pure subroutine calc_energy(BE,S,BJ,h)
     real(dp), intent(out) :: BE
-    real(dp), intent(in) :: S(:,:), h, BJ
+    real(dp), intent(in) :: S(:,:,:), h, BJ
 
     integer :: i, j, k, nn(4,2)
     ! nog aanpassen voor xy model
+    BE =0._dp
+!
+!    if (size(S,1) < 2) return !check
+!    
+!    BE = 0._dp ! initialze energy 
+!
+!    do i = 1,L
+!      do j = 1,L
+!        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
+!        do k = 1,4
+!          BE = BE - BJ*S(i,j)*S(nn(k,1),nn(k,2))
+!        enddo
+!      enddo
+!    enddo
 
-    if (size(S,1) < 2) return !check
-    
-    BE = 0._dp ! initialze energy 
-
-    do i = 1,L
-      do j = 1,L
-        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
-        do k = 1,4
-          BE = BE - BJ*S(i,j)*S(nn(k,1),nn(k,2))
-        enddo
-      enddo
-    enddo
-
-    BE = 0.5_dp*BE ! account for double counting of pairs
-    BE = BE - h*sum(S) ! add external field
+!    BE = 0.5_dp*BE ! account for double counting of pairs
+!    BE = BE - h*sum(S) ! add external field
   end subroutine
   
   pure function nn_idx(x)
