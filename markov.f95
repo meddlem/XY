@@ -7,8 +7,8 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BJ,h,t,m,runtime)
-    real(dp), intent(inout) :: S(:,:,:), BE(:), BJ, m(:), h
+  subroutine run_sim(S,BE,BJ,t,m,runtime)
+    real(dp), intent(inout) :: S(:,:,:), BE(:), BJ, m(:)
     integer, intent(inout) :: t(:)
     integer, intent(out) :: runtime
 
@@ -17,7 +17,6 @@ contains
     
     ! initialize needed variables
     j = 0
-    h = 0._dp ! overwrite user setting, just in case 
     t = (/(i,i=0,n_meas-1)/)
 
     call system_clock(start_time)
@@ -27,7 +26,7 @@ contains
       if (mod(i,meas_step) == 0) then
         j = j+1
         m(j) = m_tmp
-        call calc_energy(BE(j),S,BJ,h)
+        call calc_energy(BE(j),S,BJ)
       endif
 
       if (mod(i,plot_interval) == 0) call write_lattice(S) ! write lattice to pipe
@@ -44,7 +43,7 @@ contains
     integer, allocatable :: C(:,:)
     logical, allocatable :: C_added(:,:)
     integer :: i, j, s_cl, x(2), nn(4,2)
-    real(dp) :: a
+    real(dp) :: a, u(2)
     
     allocate(C(N,2),C_added(N,N))
     ! initialize variables 
@@ -53,20 +52,21 @@ contains
     C_added = .false. ! tells us if spin was already considered for cluster
     C = 0 ! init array that holds indices of all spins in cluster
 
-    call random_spin(x) ! start cluster by choosing 1 spin
-
+    call random_idx(x) ! start cluster by choosing 1 spin
     C(1,:) = x
     C_added(x(1),x(2)) = .true. ! add chosen spin to cluster     
-
-    S(x(1),x(2),:) = S(x(1),x(2)) - 2._dp*(..) ! flip initial spin
-    a = cos(-S(x(1),x(2))) 
+    call random_dir(u) 
+    
+    ! flip initial spin
+    a = dot_product(S(x(1),x(2),:),u) 
+    S(x(1),x(2),:) = S(x(1),x(2),:) - 2._dp*a*u  
     
     do while (i<=s_cl)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over neighbors of x
-        call try_add(S,C,C_added,s_cl,a,nn(j,:),BJ)
+        call try_add(S,C,C_added,s_cl,a,u,nn(j,:),BJ)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
@@ -75,19 +75,18 @@ contains
     deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,C_added,s_cl,a,s_idx,BJ)
+  subroutine try_add(S,C,C_added,s_cl,a,u,s_idx,BJ)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout) :: s_cl, C(:,:)
     logical, intent(inout) :: C_added(:,:)
     integer, intent(in) :: s_idx(:)
-    real(dp), intent(in) :: a, BJ
+    real(dp), intent(in) :: a, BJ, u(:)
 
     real(dp) :: r, p, b
-    ! deze def van spin flip klopt niet 
     
     if (C_added(s_idx(1),s_idx(2)) .eqv. .false.) then
-      b = a*cos(S(s_idx(1),s_idx(2)))
-      p = 1 - exp(-2*BJ*min(b,0._dp)) 
+      b = a*dot_product(S(s_idx(1),s_idx(2),:),u)
+      p = 1 - exp(-2*BJ*b) ! check of dit echt klopt 
       call random_number(r)
 
       if (r<p) then ! add spin to cluster with probability p
@@ -95,14 +94,15 @@ contains
         C_added(s_idx(1),s_idx(2)) = .true. 
 
         C(s_cl,:) = s_idx 
-        S(s_idx(1),s_idx(2)) = -S(s_idx(1),s_idx(2))  ! flip spin
+        S(s_idx(1),s_idx(2),:) = S(s_idx(1),s_idx(2),:) - &
+          2._dp*dot_product(S(s_idx(1),s_idx(2),:),u)*u  
       endif
     endif
   end subroutine
 
-  pure subroutine calc_energy(BE,S,BJ,h)
+  pure subroutine calc_energy(BE,S,BJ)
     real(dp), intent(out) :: BE
-    real(dp), intent(in) :: S(:,:,:), h, BJ
+    real(dp), intent(in) :: S(:,:,:), BJ
 
     integer :: i, j, k, nn(4,2)
     ! nog aanpassen voor xy model
@@ -136,10 +136,9 @@ contains
     nn_idx(4,:) = merge(x - [0,1], [x(1),L], x(2) /= 1) 
   end function
   
-  subroutine random_spin(x)
+  subroutine random_idx(x)
     ! returns index of randomly picked spin
     integer, intent(out) :: x(:)
-
     real(dp) :: u(2)
 
     call random_number(u)
@@ -147,4 +146,13 @@ contains
     x = nint(u) ! index of spin to flip
   end subroutine
 
+  subroutine random_dir(r)
+    ! returns random unit vector 
+    real(dp), intent(out) :: r(:)
+    real(dp) :: u
+
+    call random_number(u)
+    u = 2._dp*pi*u
+    r = [cos(u), sin(u)]
+  end subroutine
 end module

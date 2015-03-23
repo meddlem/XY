@@ -44,7 +44,7 @@ contains
   end subroutine
   
   subroutine write_lattice(S)
-    real(dp), intent(in) :: S(:,:)
+    real(dp), intent(in) :: S(:,:,:)
     integer :: i, j
     character(30) :: rowfmt
     write(rowfmt, '(A)') '(I3,1X,I3,2X,F6.3,2X,F6.3)' 
@@ -53,7 +53,7 @@ contains
     open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
       do i = 1,L
         do j = 1,L
-          write(11,rowfmt) i, j, 0.4_dp*cos(S(i,j)), 0.4_dp*sin(S(i,j)) 
+          write(11,rowfmt) i, j, 0.4_dp*S(i,j,1), 0.4_dp*S(i,j,2) 
         enddo
       enddo
     close(11)
