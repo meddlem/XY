@@ -14,7 +14,7 @@ contains
     
     ! create a gnuplot command file
     open(10,access = 'sequential',file = 'matplot.plt')
-      write(10,*) 'set term x11 enhanced font "Verdana,10"' 
+      write(10,*) 'set term wxt' !x11 term for better performance
       write(10,*) 'set border linewidth 0'
       write(10,*) 'set lmargin screen 0.1'
       write(10,*) 'set rmargin screen 0.9'
@@ -23,7 +23,6 @@ contains
       write(10,*) 'unset key'
       write(10,'(A,I3,A)') 'set xrange [0:', L+1, ']'
       write(10,'(A,I3,A)') 'set yrange [0:', L+1, ']'
-      write(10,*) 'set palette color'
       write(10,*) 'set title "'//TRIM(title)//'"'
       write(10,*) 'set pm3d map'
       write(10,*) 'load "loop.plt"'
@@ -32,8 +31,8 @@ contains
     ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'plot "< cat plotfifo.dat" \'
-      write(10,*) 'with vectors head size 0.2,20,60 filled'
-      write(10,*) 'pause 0.4'
+      write(10,*) 'with vectors head size 0.1,20,60 filled'
+      write(10,*) 'pause 0.5'
       write(10,*) 'reread'
     close(10)
     
@@ -51,7 +50,7 @@ contains
     open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
       do i = 1,L
         do j = 1,L
-          write(11,rowfmt) i, j, 0.4_dp*S(1,i,j), 0.4_dp*S(2,i,j) 
+          write(11,rowfmt) i, j, 0.45_dp*S(1,i,j), 0.45_dp*S(2,i,j) 
         enddo
       enddo
     close(11)

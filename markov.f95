@@ -7,8 +7,8 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,K,t,m,runtime)
-    real(dp), intent(inout) :: S(:,:,:), BE(:), K, m(:)
+  subroutine run_sim(S,BE,BK,t,m,runtime)
+    real(dp), intent(inout) :: S(:,:,:), BE(:), BK, m(:)
     integer, intent(inout) :: t(:)
     integer, intent(out) :: runtime
 
@@ -21,12 +21,12 @@ contains
 
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,m_tmp,K)
+      call gen_config(S,m_tmp,BK)
 
       if (mod(i,meas_step) == 0) then
         j = j+1
         m(j) = m_tmp
-        call calc_energy(BE(j),S,K)
+        call calc_energy(BE(j),S,BK)
       endif
 
       if (mod(i,plot_interval) == 0) call write_lattice(S) ! write lattice to pipe
@@ -35,9 +35,9 @@ contains
     runtime = (end_time - start_time)/1000
   end subroutine
 
-  subroutine gen_config(S,m,K)
+  subroutine gen_config(S,m,BK)
     real(dp), intent(inout) :: S(:,:,:)
-    real(dp), intent(in) :: K
+    real(dp), intent(in) :: BK
     real(dp), intent(out) :: m
 
     integer, allocatable :: C(:,:)
@@ -67,7 +67,7 @@ contains
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over neighbors of x
-        call try_add(S,C,C_added,s_cl,sigma_x,u,nn(j,:),K)
+        call try_add(S,C,C_added,s_cl,sigma_x,u,nn(j,:),BK)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
@@ -76,12 +76,12 @@ contains
     deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,C_added,s_cl,sigma_x,u,s_idx,K)
+  subroutine try_add(S,C,C_added,s_cl,sigma_x,u,s_idx,BK)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout) :: s_cl, C(:,:)
     logical, intent(inout) :: C_added(:,:)
     integer, intent(in) :: s_idx(:)
-    real(dp), intent(in) :: sigma_x, K, u(:)
+    real(dp), intent(in) :: sigma_x, BK, u(:)
 
     integer :: i, j 
     real(dp) :: r, p, b
@@ -92,7 +92,7 @@ contains
     if (C_added(i,j) .eqv. .false.) then
       
       b = sigma_x*dot_product(S(:,i,j),u)
-      p = 1 - exp(2*min(K*b,0._dp)) ! check of dit echt klopt 
+      p = 1 - exp(2*min(BK*b,0._dp)) ! check of dit echt klopt 
       call random_number(r)
 
       if (r<p) then ! add spin to cluster with probability p
@@ -105,29 +105,24 @@ contains
     endif
   end subroutine
 
-  pure subroutine calc_energy(BE,S,K)
+  pure subroutine calc_energy(BE,S,BK)
     real(dp), intent(out) :: BE
-    real(dp), intent(in) :: S(:,:,:), K
+    real(dp), intent(in) :: S(:,:,:), BK
 
-!    integer :: i, j, k, nn(4,2)
-    ! nog aanpassen voor xy model
-    BE = 0._dp
-!
-!    if (size(S,1) < 2) return !check
-!    
-!    BE = 0._dp ! initialze energy 
-!
-!    do i = 1,L
-!      do j = 1,L
-!        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
-!        do k = 1,4
-!          BE = BE - K*S(i,j)*S(nn(k,1),nn(k,2))
-!        enddo
-!      enddo
-!    enddo
+    integer :: i, j, k, nn(4,2)
+    
+    BE = 0._dp ! initialze energy 
 
-!    BE = 0.5_dp*BE ! account for double counting of pairs
-!    BE = BE - h*sum(S) ! add external field
+    do i = 1,L
+      do j = 1,L
+        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
+        do k = 1,4
+          BE = BE - BK*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
+        enddo
+      enddo
+    enddo
+
+    BE = 0.5_dp*BE ! account for double counting of pairs
   end subroutine
   
   pure function nn_idx(x)
