@@ -28,7 +28,7 @@ program main
   
   call close_lattice_plot()
   call results_out(BK,BE(n_meas),runtime)
-!  call line_plot(real(t,dp),BE,'t','energy','','',1)
+  call line_plot(real(t,dp),BE,'t','energy','','',1)
 !  call line_plot(real(t,dp),real(m,dp),'t','magnetization','','',2)
   
 !  deallocate(S,m,t,BE)
