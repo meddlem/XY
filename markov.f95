@@ -43,7 +43,7 @@ contains
     integer, allocatable :: C(:,:)
     logical, allocatable :: C_added(:,:)
     integer :: i, j, s_cl, x(2), nn(4,2)
-    real(dp) :: a, u(2)
+    real(dp) :: sigma_x, u(2)
     
     allocate(C(N,2),C_added(N,N))
     ! initialize variables 
@@ -53,20 +53,21 @@ contains
     C = 0 ! init array that holds indices of all spins in cluster
 
     call random_idx(x) ! start cluster by choosing 1 spin
+    call random_dir(u) 
     C(1,:) = x
     C_added(x(1),x(2)) = .true. ! add chosen spin to cluster     
-    call random_dir(u) 
     
     ! flip initial spin
-    a = dot_product(S(x(1),x(2),:),u) 
-    S(x(1),x(2),:) = S(x(1),x(2),:) - 2._dp*a*u  
+    sigma_x = dot_product(S(:,x(1),x(2)),u) 
+    S(:,x(1),x(2)) = S(:,x(1),x(2)) - 2._dp*sigma_x*u  
+    !sigma_x = dot_product(S(:,x(1),x(2)),u) 
     
     do while (i<=s_cl)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over neighbors of x
-        call try_add(S,C,C_added,s_cl,a,u,nn(j,:),K)
+        call try_add(S,C,C_added,s_cl,sigma_x,u,nn(j,:),K)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
@@ -75,27 +76,31 @@ contains
     deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,C_added,s_cl,a,u,s_idx,K)
+  subroutine try_add(S,C,C_added,s_cl,sigma_x,u,s_idx,K)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout) :: s_cl, C(:,:)
     logical, intent(inout) :: C_added(:,:)
     integer, intent(in) :: s_idx(:)
-    real(dp), intent(in) :: a, K, u(:)
+    real(dp), intent(in) :: sigma_x, K, u(:)
 
+    integer :: i, j 
     real(dp) :: r, p, b
+
+    i = s_idx(1)
+    j = s_idx(2)
     
-    if (C_added(s_idx(1),s_idx(2)) .eqv. .false.) then
-      b = a*dot_product(S(s_idx(1),s_idx(2),:),u)
-      p = 1 - exp(-2*K*b) ! check of dit echt klopt 
+    if (C_added(i,j) .eqv. .false.) then
+      
+      b = sigma_x*dot_product(S(:,i,j),u)
+      p = 1 - exp(2*min(K*b,0._dp)) ! check of dit echt klopt 
       call random_number(r)
 
       if (r<p) then ! add spin to cluster with probability p
-        s_cl = s_cl+1
-        C_added(s_idx(1),s_idx(2)) = .true. 
+        s_cl = s_cl+1 ! increase nr of spins in cluster
+        C(s_cl,:) = s_idx ! add to cluster
+        C_added(i,j) = .true. ! tag spin 
 
-        C(s_cl,:) = s_idx 
-        S(s_idx(1),s_idx(2),:) = S(s_idx(1),s_idx(2),:) - &
-          2._dp*dot_product(S(s_idx(1),s_idx(2),:),u)*u  
+        S(:,i,j) = S(:,i,j) - 2._dp*dot_product(S(:,i,j),u)*u ! flip spin 
       endif
     endif
   end subroutine

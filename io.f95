@@ -20,7 +20,7 @@ contains
 
     open(12,access = 'sequential',file = 'output.txt')
       write(12,'(/,A,/)') '*********** Summary ***********' 
-      write(12,*) "Beta*J :", K
+      write(12,*) "K :", K
     
       write(12,'(/,A,/)') '*********** Output ************' 
       write(12,'(A,I6,A)') "Runtime : ", runtime, " s"

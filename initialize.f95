@@ -14,8 +14,8 @@ contains
 
     call random_number(u)
     theta = 2._dp*pi*u ! random angles between 0 and pi
-    S(:,:,1) = cos(theta) 
-    S(:,:,2) = sin(theta)
+    S(1,:,:) = cos(theta) 
+    S(2,:,:) = sin(theta)
     
     deallocate(u,theta)
   end subroutine 

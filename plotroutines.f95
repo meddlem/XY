@@ -32,8 +32,8 @@ contains
     ! create plot/animate instruction
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'plot "< cat plotfifo.dat" \'
-      write(10,*) 'with vectors head size 0.1,20,60'
-      write(10,*) 'pause 0.2'
+      write(10,*) 'with vectors head size 0.2,20,60 filled'
+      write(10,*) 'pause 0.4'
       write(10,*) 'reread'
     close(10)
     
@@ -51,7 +51,7 @@ contains
     open(11,access = 'sequential',status = 'replace',file = 'plotfifo.dat')
       do i = 1,L
         do j = 1,L
-          write(11,rowfmt) i, j, 0.4_dp*S(i,j,1), 0.4_dp*S(i,j,2) 
+          write(11,rowfmt) i, j, 0.4_dp*S(1,i,j), 0.4_dp*S(2,i,j) 
         enddo
       enddo
     close(11)
