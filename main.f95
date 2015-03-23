@@ -7,10 +7,9 @@ program main
   implicit none
   
   ! variables:
-  ! BE: beta*energy,
-  ! dE: change in energy between new and initial config
-  ! h: external field
-  ! S: array containing Spins indexed as row, column
+  ! BK: beta*coupling 
+  ! BE: beta*energy 
+  ! S: array containing spins vectors indexed as row, column
 
   real(dp), allocatable :: S(:,:,:), BE(:) 
   real(dp)              :: BK
@@ -29,7 +28,6 @@ program main
   call close_lattice_plot()
   call results_out(BK,BE(n_meas),runtime)
   call line_plot(real(t,dp),BE,'t','energy','','',1)
-!  call line_plot(real(t,dp),real(m,dp),'t','magnetization','','',2)
   
-!  deallocate(S,m,t,BE)
+  deallocate(S,t,BE)
 end program
