@@ -20,6 +20,7 @@ contains
       write(10,*) 'set rmargin screen 0.9'
       write(10,*) 'set tmargin screen 0.9'
       write(10,*) 'set bmargin screen 0.1'
+      write(10,*) 'unset tics'
       write(10,*) 'unset key'
       write(10,'(A,I3,A)') 'set xrange [0:', L+1, ']'
       write(10,'(A,I3,A)') 'set yrange [0:', L+1, ']'
@@ -32,7 +33,7 @@ contains
     open(10,access = 'sequential', file = 'loop.plt')
       write(10,*) 'plot "< cat plotfifo.dat" \'
       write(10,*) 'with vectors head size 0.1,20,60 filled'
-      write(10,*) 'pause 0.5'
+      write(10,*) 'pause 0.3'
       write(10,*) 'reread'
     close(10)
     

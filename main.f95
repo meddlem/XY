@@ -12,19 +12,19 @@ program main
   ! h: external field
   ! S: array containing Spins indexed as row, column
 
-  real(dp), allocatable :: S(:,:,:), m(:), BE(:) 
+  real(dp), allocatable :: S(:,:,:), BE(:) 
   real(dp)              :: BK
   integer, allocatable  :: t(:)
   integer               :: runtime
   
-  allocate(S(2,L,L),m(n_meas),t(n_meas),BE(n_meas))
+  allocate(S(2,L,L),t(n_meas),BE(n_meas))
   
   call user_in(BK)
   call init_random_seed()
   call init_lattice(S)
   call animate_lattice('')
   
-  call run_sim(S,BE,BK,t,m,runtime)
+  call run_sim(S,BE,BK,t,runtime)
   
   call close_lattice_plot()
   call results_out(BK,BE(n_meas),runtime)
