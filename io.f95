@@ -5,22 +5,22 @@ module io
   public :: user_in, results_out
 contains
 
-  subroutine user_in(BJ)
-    real(dp), intent(out) :: BJ
+  subroutine user_in(K)
+    real(dp), intent(out) :: K
   
     write(*,'(/,A,/)') '************ Input *************' 
-    write(*,'(A)',advance='no') "Beta*J = " 
-    read(*,*) BJ
+    write(*,'(A)',advance='no') "K = " 
+    read(*,*) K
     write(*,'(A)') "Running simulation..."
   end subroutine
 
-  subroutine results_out(BJ,BE,runtime) 
-    real(dp), intent(in) :: BJ, BE
+  subroutine results_out(K,BE,runtime) 
+    real(dp), intent(in) :: K, BE
     integer, intent(in) :: runtime
 
     open(12,access = 'sequential',file = 'output.txt')
       write(12,'(/,A,/)') '*********** Summary ***********' 
-      write(12,*) "Beta*J :", BJ
+      write(12,*) "Beta*J :", K
     
       write(12,'(/,A,/)') '*********** Output ************' 
       write(12,'(A,I6,A)') "Runtime : ", runtime, " s"
