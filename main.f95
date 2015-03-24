@@ -21,7 +21,7 @@ program main
   call user_in(BK)
   call init_random_seed()
   call init_lattice(S)
-  call animate_lattice('')
+  call animate_lattice()
   
   call run_sim(S,BE,BK,t,h_mod,runtime)
   

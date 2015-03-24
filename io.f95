@@ -25,7 +25,7 @@ contains
       write(12,'(/,A,/)') '*********** Output ************' 
       write(12,'(A,I6,A)') "Runtime : ", runtime, " s"
       write(12,*) "Final Energy", BE
-      write(12,*) "Helicity modulo", h_mod
+      write(12,*) "Helicity modulus", h_mod
       write(12,'(/,A,/)') '*******************************' 
     close(12)
     
