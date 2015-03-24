@@ -13,7 +13,7 @@ module constants
   integer, parameter :: L = 32 ! lattice side
   integer, parameter :: N = L**2 ! number of spins
 
-  integer, parameter :: meas_step = 100 ! interval between measurements
+  integer, parameter :: meas_step = 101 ! interval between measurements
   integer, parameter :: steps = 100000 ! number of iterations
   integer, parameter :: n_meas = steps/meas_step ! total number of measurements
   integer, parameter :: meas_start = 1000 ! start measurement after .. steps 

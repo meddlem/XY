@@ -9,15 +9,14 @@ contains
   subroutine init_lattice(S)
     real(dp), intent(out) :: S(:,:,:)
     
-    real(dp), allocatable :: u(:,:,:)
-    real(dp)  :: norm_u(L,L)
+    real(dp), allocatable :: u(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
-    allocate(u(2,L,L))
+    allocate(u(L,L))
 
     call random_number(u)
-    norm_u = sqrt(sum(u**2,1))
-    S(1,:,:) = u(1,:,:)/norm_u
-    S(2,:,:) = u(2,:,:)/norm_u
+    u = 2._dp*pi*u
+    S(1,:,:) = cos(u)
+    S(2,:,:) = sin(u)
     
     deallocate(u)
   end subroutine 

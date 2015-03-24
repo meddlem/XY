@@ -7,13 +7,14 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BK,t,runtime)
+  subroutine run_sim(S,BE,BK,t,h_mod,runtime)
     real(dp), intent(inout) :: S(:,:,:), BE(:), BK
     integer, intent(inout)  :: t(:)
     integer, intent(out)    :: runtime
 
     real(dp), allocatable :: G(:)
-    integer :: i, j, start_time, end_time
+    real(dp)  :: h_mod
+    integer   :: i, j, start_time, end_time
     
     allocate(G(n_meas))
     ! initialize needed variables
@@ -35,7 +36,7 @@ contains
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
 
-    print *, 'helicity modulus =', sum(G)/n_meas
+    h_mod = sum(G)/n_meas
     deallocate(G)
   end subroutine
 
@@ -137,18 +138,26 @@ contains
   subroutine random_dir(r)
     ! returns random unit vector 
     real(dp), intent(out) :: r(:)
-    real(dp) :: norm_u, u(2)
+    real(dp) :: u
 
     call random_number(u)
-    norm_u = sqrt(sum(u**2))
-    r = u/norm_u
+    u = 2._dp*pi*u
+    r = [cos(u),sin(u)]
   end subroutine
   
+  pure function angle(S)
+    real(dp), intent(in) :: S(:)
+    real(dp)             :: angle
+    ! convert spin vector to angle wrt x-axis
+    
+    angle = atan2(S(2),S(1)) 
+  end function
+
   pure subroutine calc_energy(BE,S,BK)
     ! calculate energy of the system
     real(dp), intent(out) :: BE
     real(dp), intent(in)  :: S(:,:,:), BK
-    integer :: i, j, k, nn(4,2)
+    integer               :: i, j, k, nn(4,2)
     
     BE = 0._dp ! init energy 
 
@@ -164,13 +173,12 @@ contains
     BE = 0.5_dp*BE ! correct for double counting of pairs
   end subroutine
 
-  subroutine helicity_mod(G,S,BK)
+  pure subroutine helicity_mod(G,S,BK)
     real(dp), intent(out) :: G
     real(dp), intent(in)  :: S(:,:,:), BK
     
     real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
-    real(dp)  :: dotp_x, dotp_y
-    integer   :: i, j, k, nn(4,2)
+    integer               :: i, j, k, nn(4,2)
 
     allocate(dthetax(L,L),dthetay(L,L))
     G = 0._dp
@@ -178,21 +186,16 @@ contains
     do i=1,L
       do j=1,L
         nn=nn_idx([i,j])
+        dthetax(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
+        dthetay(i,j) = angle(S(:,i,j)) - angle(S(:,i,modulo(j,L)+1))
         do k=1,4
           G = G + dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
         enddo
-        dotp_x = dot_product(S(:,i,j),S(:,modulo(i,L)+1,j))
-        dotp_y = dot_product(S(:,i,j),S(:,i,modulo(j,L)+1))
-
-        dthetax(i,j) = sign(1._dp,dotp_x)*acos(dotp_x)
-        dthetay(i,j) = sign(1._dp,dotp_y)*acos(dotp_y)
       enddo
     enddo
-    G = 0.5_dp*G ! double counting correction
-    print *, 'a', G
-    G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
-    print *, 'b', G
 
+    G = 0.5_dp*G ! double counting correction
+    G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
     G = G/(2._dp*N)
     deallocate(dthetax,dthetay)
   end subroutine
