@@ -8,16 +8,18 @@ contains
 
   subroutine init_lattice(S)
     real(dp), intent(out) :: S(:,:,:)
-    real(dp), allocatable :: u(:,:), theta(:,:)
+    
+    real(dp), allocatable :: u(:,:,:)
+    real(dp)  :: norm_u(L,L)
     ! assign initial spins at random, corresponds to T=∞ 
-    allocate(u(L,L),theta(L,L))
+    allocate(u(2,L,L))
 
     call random_number(u)
-    theta = 2._dp*pi*u ! random angles between 0 and pi
-    S(1,:,:) = cos(theta) 
-    S(2,:,:) = sin(theta)
+    norm_u = sqrt(sum(u**2,1))
+    S(1,:,:) = u(1,:,:)/norm_u
+    S(2,:,:) = u(2,:,:)/norm_u
     
-    deallocate(u,theta)
+    deallocate(u)
   end subroutine 
 
   ! initialize random seed, taken from ICCP github

@@ -12,8 +12,10 @@ contains
     integer, intent(inout)  :: t(:)
     integer, intent(out)    :: runtime
 
+    real(dp), allocatable :: G(:)
     integer :: i, j, start_time, end_time
     
+    allocate(G(n_meas))
     ! initialize needed variables
     j = 0
     t = (/(i,i=0,n_meas-1)/)
@@ -25,12 +27,16 @@ contains
       if (mod(i,meas_step) == 0) then
         j = j+1
         call calc_energy(BE(j),S,BK)
+        call helicity_mod(G(j),S,BK)
       endif
 
       if (mod(i,plot_interval) == 0) call write_lattice(S) ! lattice to pipe
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
+
+    print *, 'helicity modulus =', sum(G)/n_meas
+    deallocate(G)
   end subroutine
 
   subroutine gen_config(S,BK)
@@ -86,7 +92,7 @@ contains
     if (C_added(i,j) .eqv. .false.) then ! check if spin already in C
       call random_number(r)
       Sy_dot_u = dot_product(S(:,i,j),u)
-      p = 1 - exp(2*min(BK*S_dot_u*Sy_dot_u,0._dp))  
+      p = 1 - exp(2*BK*S_dot_u*Sy_dot_u)  
 
       if (r<p) then ! add spin to cluster with probability p
         s_cl = s_cl+1 ! increase nr of spins in cluster
@@ -98,43 +104,6 @@ contains
     endif
   end subroutine
 
-  pure subroutine calc_energy(BE,S,BK)
-    ! calculate energy of the system
-    real(dp), intent(out) :: BE
-    real(dp), intent(in)  :: S(:,:,:), BK
-    integer :: i, j, k, nn(4,2)
-    
-    BE = 0._dp ! init energy 
-
-    do i = 1,L
-      do j = 1,L
-        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
-        do k = 1,4
-          BE = BE - BK*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
-        enddo
-      enddo
-    enddo
-
-    BE = 0.5_dp*BE ! account for double counting of pairs
-  end subroutine
-
-!  pure function helicity_mod()
-!    real(dp) :: helicity_mod, G
-!
-!    do i=1,L
-!      do j=1,L
-!        nn=nn_idx([i,j])
-!        do k=1,4
-!          G = G + dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
-!        enddo
-!      enddo
-!    enddo
-!
-!
-!    helicity_mod = 1/(2._dp*N)
-!
-!  end function
-  
   pure function nn_idx(x)
     ! returns indices of nearest neighbors of x_ij, accounting for PBC
     integer, intent(in) :: x(2)
@@ -152,6 +121,7 @@ contains
     real(dp) :: Flip(2)
     
     Flip = S - 2._dp*dot_product(S,u)*u  
+    Flip = Flip/sqrt(sum(Flip**2)) ! ensure normalization of spins   
   end function
   
   subroutine random_idx(x)
@@ -167,10 +137,63 @@ contains
   subroutine random_dir(r)
     ! returns random unit vector 
     real(dp), intent(out) :: r(:)
-    real(dp) :: u
+    real(dp) :: norm_u, u(2)
 
     call random_number(u)
-    u = 2._dp*pi*u
-    r = [cos(u), sin(u)]
+    norm_u = sqrt(sum(u**2))
+    r = u/norm_u
+  end subroutine
+  
+  pure subroutine calc_energy(BE,S,BK)
+    ! calculate energy of the system
+    real(dp), intent(out) :: BE
+    real(dp), intent(in)  :: S(:,:,:), BK
+    integer :: i, j, k, nn(4,2)
+    
+    BE = 0._dp ! init energy 
+
+    do i = 1,L
+      do j = 1,L
+        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
+        do k = 1,4
+          BE = BE - BK*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
+        enddo
+      enddo
+    enddo
+
+    BE = 0.5_dp*BE ! correct for double counting of pairs
+  end subroutine
+
+  subroutine helicity_mod(G,S,BK)
+    real(dp), intent(out) :: G
+    real(dp), intent(in)  :: S(:,:,:), BK
+    
+    real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
+    real(dp)  :: dotp_x, dotp_y
+    integer   :: i, j, k, nn(4,2)
+
+    allocate(dthetax(L,L),dthetay(L,L))
+    G = 0._dp
+
+    do i=1,L
+      do j=1,L
+        nn=nn_idx([i,j])
+        do k=1,4
+          G = G + dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
+        enddo
+        dotp_x = dot_product(S(:,i,j),S(:,modulo(i,L)+1,j))
+        dotp_y = dot_product(S(:,i,j),S(:,i,modulo(j,L)+1))
+
+        dthetax(i,j) = sign(1._dp,dotp_x)*acos(dotp_x)
+        dthetay(i,j) = sign(1._dp,dotp_y)*acos(dotp_y)
+      enddo
+    enddo
+    G = 0.5_dp*G ! double counting correction
+    print *, 'a', G
+    G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
+    print *, 'b', G
+
+    G = G/(2._dp*N)
+    deallocate(dthetax,dthetay)
   end subroutine
 end module
