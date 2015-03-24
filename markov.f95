@@ -7,26 +7,29 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BK,t,h_mod,runtime)
+  subroutine run_sim(S,BE,BK,t,h_mod,Xi,runtime)
     real(dp), intent(inout) :: S(:,:,:), BE(:), BK
     integer, intent(inout)  :: t(:)
     integer, intent(out)    :: runtime
+    real(dp), intent(out)   :: Xi
 
     real(dp), allocatable :: G(:)
+    integer, allocatable :: N_SWC(:)
     real(dp)  :: h_mod
-    integer   :: i, j, start_time, end_time
+    integer   :: i, j, start_time, end_time, N_SWC_tmp
     
-    allocate(G(n_meas))
+    allocate(G(n_meas),N_SWC(n_meas))
     ! initialize needed variables
     j = 0
     t = (/(i,i=0,n_meas-1)/)
 
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,BK)
+      call gen_config(S,BK,N_SWC_tmp)
 
       if (mod(i,meas_step) == 0) then
         j = j+1
+        N_SWC(j) = N_SWC_tmp
         call calc_energy(BE(j),S,BK)
         call helicity_mod(G(j),S,BK)
       endif
@@ -35,18 +38,20 @@ contains
     enddo    
     call system_clock(end_time)
     runtime = (end_time - start_time)/1000
-
-    h_mod = sum(G)/n_meas
-    deallocate(G)
+    
+    Xi = sum(real(N_SWC,dp)**2/N**2)/n_meas ! magnetic susceptibility
+    h_mod = sum(G)/n_meas ! helicity modulus 
+    deallocate(G,N_SWC)
   end subroutine
 
-  subroutine gen_config(S,BK)
+  subroutine gen_config(S,BK,N_SWC)
     real(dp), intent(inout) :: S(:,:,:)
+    integer, intent(out)    :: N_SWC
     real(dp), intent(in)    :: BK
 
     integer, allocatable :: C(:,:)
     logical, allocatable :: C_added(:,:)
-    integer   :: i, j, s_cl, x(2), nn(4,2)
+    integer   :: i, j, x(2), nn(4,2)
     real(dp)  :: S_dot_u, u(2)
     
     allocate(C(N,2),C_added(N,N))
@@ -54,7 +59,7 @@ contains
     C = 0 ! cluster
     C_added = .false. ! tags for spins in the cluster
     i = 1 ! labels for spin in cluster
-    s_cl = 1 ! number of spins in cluster
+    N_SWC = 1 ! number of spins in cluster
 
     call random_idx(x) ! start cluster by choosing 1 spin
     call random_dir(u) ! get random unit vector
@@ -65,21 +70,21 @@ contains
     S(:,x(1),x(2)) = Flip(S(:,x(1),x(2)),u) ! flip initial spin
     S_dot_u = dot_product(S(:,x(1),x(2)),u) 
     
-    do while (i<=s_cl)
+    do while (i<=N_SWC)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over nearest neighbors of x
-        call try_add(S,C,C_added,s_cl,S_dot_u,u,nn(j,:),BK)
+        call try_add(S,C,C_added,N_SWC,S_dot_u,u,nn(j,:),BK)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
     deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,C_added,s_cl,S_dot_u,u,s_idx,BK)
+  subroutine try_add(S,C,C_added,N_SWC,S_dot_u,u,s_idx,BK)
     real(dp), intent(inout) :: S(:,:,:)
-    integer, intent(inout)  :: s_cl, C(:,:)
+    integer, intent(inout)  :: N_SWC, C(:,:)
     logical, intent(inout)  :: C_added(:,:)
     integer, intent(in)     :: s_idx(:)
     real(dp), intent(in)    :: S_dot_u, BK, u(:)
@@ -96,8 +101,8 @@ contains
       p = 1 - exp(2*BK*S_dot_u*Sy_dot_u)  
 
       if (r<p) then ! add spin to cluster with probability p
-        s_cl = s_cl+1 ! increase nr of spins in cluster
-        C(s_cl,:) = s_idx ! add to cluster
+        N_SWC = N_SWC+1 ! increase nr of spins in cluster
+        C(N_SWC,:) = s_idx ! add to cluster
         C_added(i,j) = .true. ! tag spin as added to C 
 
         S(:,i,j) = Flip(S(:,i,j),u) ! flip spin 
