@@ -6,10 +6,10 @@ module initialize
 
 contains
 
-  subroutine init_lattice(S)
-    real(dp), intent(out) :: S(:,:,:)
-    
-    real(dp), allocatable :: u(:,:)
+  subroutine init_lattice(L,S)
+    real(dp), intent(out)    :: S(:,:,:)
+    integer(lng), intent(in) :: L
+    real(dp), allocatable    :: u(:,:)
     ! assign initial spins at random, corresponds to T=∞ 
     allocate(u(L,L))
 

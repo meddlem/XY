@@ -7,46 +7,54 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BK,t,h_mod,Xi,runtime)
-    real(dp), intent(inout) :: S(:,:,:), BE(:), BK
-    integer, intent(inout)  :: t(:)
+  subroutine run_sim(S,BE,BK,t,h_mod,Chi,runtime)
+    real(dp), intent(inout) :: S(:,:,:), t(:), BE(:), BK
     integer, intent(out)    :: runtime
-    real(dp), intent(out)   :: Xi
+    real(dp), intent(out)   :: Chi
 
     real(dp), allocatable :: G(:)
     integer, allocatable :: N_SWC(:)
     real(dp)  :: h_mod
-    integer   :: i, j, start_time, end_time, N_SWC_tmp
+    integer   :: i, j, L, N, start_time, end_time, N_SWC_tmp
     
     allocate(G(n_meas),N_SWC(n_meas))
     ! initialize needed variables
     j = 0
-    t = (/(i,i=0,n_meas-1)/)
-
+    L = size(S,2)
+    N = L**2
+    t = real((/(i,i=0,n_meas-1)/),dp)
+    
+    call animate_lattice(L)
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,BK,N_SWC_tmp)
+      call gen_config(S,L,BK,N_SWC_tmp)
 
-      if (mod(i,meas_step) == 0) then
+      if (i>meas_start) then
         j = j+1
         N_SWC(j) = N_SWC_tmp
-        call calc_energy(BE(j),S,BK)
-        call helicity_mod(G(j),S,BK)
+        call calc_energy(BE(j),S,L,BK)
+        call helicity_mod(G(j),S,L,BK)
       endif
-
-      if (mod(i,plot_interval) == 0) call write_lattice(S) ! lattice to pipe
+  
+      if (mod(i,plot_interval) == 0) then
+        call write_lattice(S,L) ! lattice to pipe
+      endif
     enddo    
     call system_clock(end_time)
+    call close_lattice_plot()
+
+    ! calculate runtime
     runtime = (end_time - start_time)/1000
     
-    Xi = sum(real(N_SWC,dp)**2/N**2)/n_meas ! magnetic susceptibility
+    Chi = sum(real(N_SWC,dp)**2/N**2)/n_meas ! magnetic susceptibility
     h_mod = sum(G)/n_meas ! helicity modulus 
     deallocate(G,N_SWC)
   end subroutine
 
-  subroutine gen_config(S,BK,N_SWC)
+  subroutine gen_config(S,L,BK,N_SWC)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(out)    :: N_SWC
+    integer, intent(in)     :: L
     real(dp), intent(in)    :: BK
 
     integer, allocatable :: C(:,:)
@@ -54,14 +62,14 @@ contains
     integer   :: i, j, x(2), nn(4,2)
     real(dp)  :: S_dot_u, u(2)
     
-    allocate(C(N,2),C_added(N,N))
     ! initialize variables 
+    allocate(C(L**2,2),C_added(L**2,L**2))
     C = 0 ! cluster
     C_added = .false. ! tags for spins in the cluster
     i = 1 ! labels for spin in cluster
     N_SWC = 1 ! number of spins in cluster
 
-    call random_idx(x) ! start cluster by choosing 1 spin
+    call random_idx(x,L) ! start cluster by choosing 1 spin
     call random_dir(u) ! get random unit vector
 
     C(1,:) = x ! add chosen spin to cluster  
@@ -72,7 +80,7 @@ contains
     
     do while (i<=N_SWC)
       x = C(i,:) ! pick a spin x in the cluster
-      nn = nn_idx(x) ! get nearest neighbors of spin x
+      nn = nn_idx(x,L) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over nearest neighbors of x
         call try_add(S,C,C_added,N_SWC,S_dot_u,u,nn(j,:),BK)
@@ -110,9 +118,9 @@ contains
     endif
   end subroutine
 
-  pure function nn_idx(x)
+  pure function nn_idx(x,L)
     ! returns indices of nearest neighbors of x_ij, accounting for PBC
-    integer, intent(in) :: x(2)
+    integer, intent(in) :: x(2), L
     integer :: nn_idx(4,2)
 
     nn_idx(1,:) = merge(x + [1,0], [1,x(2)], x(1) /= L)
@@ -130,8 +138,9 @@ contains
     Flip = Flip/sqrt(sum(Flip**2)) ! ensure normalization of spins   
   end function
   
-  subroutine random_idx(x)
+  subroutine random_idx(x,L)
     ! returns index of randomly picked spin
+    integer, intent(in)  :: L
     integer, intent(out) :: x(:)
     real(dp) :: u(2)
 
@@ -158,17 +167,18 @@ contains
     angle = atan2(S(2),S(1)) 
   end function
 
-  pure subroutine calc_energy(BE,S,BK)
+  pure subroutine calc_energy(BE,S,L,BK)
     ! calculate energy of the system
     real(dp), intent(out) :: BE
     real(dp), intent(in)  :: S(:,:,:), BK
+    integer, intent(in)   :: L
     integer               :: i, j, k, nn(4,2)
     
     BE = 0._dp ! init energy 
 
     do i = 1,L
       do j = 1,L
-        nn = nn_idx([i,j]) ! get nearest neighbors of spin i,j
+        nn = nn_idx([i,j],L) ! get nearest neighbors of spin i,j
         do k = 1,4
           BE = BE - BK*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
         enddo
@@ -178,19 +188,21 @@ contains
     BE = 0.5_dp*BE ! correct for double counting of pairs
   end subroutine
 
-  pure subroutine helicity_mod(G,S,BK)
+  subroutine helicity_mod(G,S,L,BK)
     real(dp), intent(out) :: G
     real(dp), intent(in)  :: S(:,:,:), BK
+    integer, intent(in)   :: L
     
     real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
-    integer               :: i, j, k, nn(4,2)
+    integer               :: i, j, k, N, nn(4,2)
 
     allocate(dthetax(L,L),dthetay(L,L))
     G = 0._dp
+    N = L**2
 
     do i=1,L
       do j=1,L
-        nn=nn_idx([i,j])
+        nn = nn_idx([i,j],L)
         dthetax(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
         dthetay(i,j) = angle(S(:,i,j)) - angle(S(:,i,modulo(j,L)+1))
         do k=1,4
@@ -201,6 +213,7 @@ contains
 
     G = 0.5_dp*G ! double counting correction
     G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
+    ! je moet nog een vormfactor erbij hebben kbT
     G = G/(2._dp*N)
     deallocate(dthetax,dthetay)
   end subroutine

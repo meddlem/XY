@@ -5,7 +5,8 @@ module plotroutines
   public :: line_plot, write_lattice, close_lattice_plot, animate_lattice
 
 contains
-  subroutine animate_lattice()
+  subroutine animate_lattice(L)
+    integer, intent(in) :: L
     integer :: ret
     
     ! creates fifo pipe: plotfifo.dat
@@ -39,8 +40,9 @@ contains
     call system("gnuplot matplot.plt &",ret)
   end subroutine
   
-  subroutine write_lattice(S)
+  subroutine write_lattice(S,L)
     real(dp), intent(in) :: S(:,:,:)
+    integer, intent(in)  :: L
     integer :: i, j
     character(30) :: rowfmt
     write(rowfmt, '(A)') '(I3,1X,I3,2X,F6.3,2X,F6.3)' 

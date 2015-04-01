@@ -2,32 +2,26 @@ program main
   use constants
   use initialize
   use markov
-  use plotroutines
   use io
   implicit none
   
   ! variables:
   ! BK: beta*coupling 
   ! BE: beta*energy 
-  ! S: array containing spins vectors indexed as row, column
+  ! L:  lattice side
+  ! S:  array containing spins vectors indexed as row, column
 
-  real(dp), allocatable :: S(:,:,:), BE(:) 
+  real(dp), allocatable :: S(:,:,:), t(:), BE(:) 
   real(dp)              :: BK, h_mod, Xi
-  integer, allocatable  :: t(:)
-  integer               :: runtime
+  integer               :: runtime, L
   
+  call user_in(BK,L)
   allocate(S(2,L,L),t(n_meas),BE(n_meas))
-  
-  call user_in(BK)
   call init_random_seed()
-  call init_lattice(S)
-  call animate_lattice()
+  call init_lattice(L,S)
   
   call run_sim(S,BE,BK,t,h_mod,Xi,runtime)
   
-  call close_lattice_plot()
-  call results_out(BK,BE(n_meas),h_mod,Xi,runtime)
-  call line_plot(real(t,dp),BE,'t','energy','','',1)
-  
+  call results_out(BK,t,BE,h_mod,Xi,runtime)
   deallocate(S,t,BE)
 end program

@@ -1,5 +1,5 @@
 FC = gfortran
-FFLAGS = -ffast-math -Wall -march=native -O3 -fopenmp -mno-avx #compiler flags
+FFLAGS = -ffast-math -Wall -march=native -O3 -fopenmp -mno-avx -fcheck=bounds #compiler flags
 LDFLAGS = -fopenmp #link flags
 
 COMPILE = $(FC) $(FFLAGS)
