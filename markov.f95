@@ -46,7 +46,7 @@ contains
     ! calculate runtime
     runtime = (end_time - start_time)/1000
     
-    Chi = sum(real(N_SWC,dp)**2/N**2)/n_meas ! magnetic susceptibility
+    Chi = sum(real(N_SWC,dp)**2/real(N,dp)**2)/n_meas ! magnetic susceptibility
     h_mod = sum(G)/n_meas ! helicity modulus 
     deallocate(G,N_SWC)
   end subroutine
@@ -188,7 +188,7 @@ contains
     BE = 0.5_dp*BE ! correct for double counting of pairs
   end subroutine
 
-  subroutine helicity_mod(G,S,L,BK)
+  pure subroutine helicity_mod(G,S,L,BK)
     real(dp), intent(out) :: G
     real(dp), intent(in)  :: S(:,:,:), BK
     integer, intent(in)   :: L
@@ -213,7 +213,6 @@ contains
 
     G = 0.5_dp*G ! double counting correction
     G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
-    ! je moet nog een vormfactor erbij hebben kbT
     G = G/(2._dp*N)
     deallocate(dthetax,dthetay)
   end subroutine
