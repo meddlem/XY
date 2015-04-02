@@ -13,7 +13,7 @@ contains
     real(dp), intent(out)   :: Chi
 
     real(dp), allocatable :: G(:)
-    integer, allocatable :: N_SWC(:)
+    integer, allocatable  :: N_SWC(:)
     real(dp)  :: h_mod
     integer   :: i, j, L, N, start_time, end_time, N_SWC_tmp
     
@@ -43,9 +43,7 @@ contains
     call system_clock(end_time)
     call close_lattice_plot()
 
-    ! calculate runtime
-    runtime = (end_time - start_time)/1000
-    
+    runtime = (end_time - start_time)/1000 ! calculate runtime
     Chi = sum(real(N_SWC,dp)/real(N,dp))/n_meas ! magnetic susc
     h_mod = sum(G)/n_meas ! helicity modulus 
     deallocate(G,N_SWC)
@@ -74,7 +72,6 @@ contains
 
     C(1,:) = ss ! add chosen spin to cluster  
     in_cluster(ss(1),ss(2)) = .true. ! tag spin     
-
     call flip(S,ss(1),ss(2),u) ! flip initial spin
     
     do while (i<=N_SWC)
@@ -113,7 +110,7 @@ contains
       S2_dot_u = dot_product(S(:,i,j),u)
       p = 1 - exp(2._dp*BJ*S1_dot_u*S2_dot_u)
 
-      if (r<p) then ! add spin to cluster with probability p
+      if (r < p) then ! add spin to cluster with probability p
         N_SWC = N_SWC+1 ! increase nr of spins in cluster
         
         ! add to cluster
@@ -200,24 +197,24 @@ contains
     real(dp), intent(in)  :: S(:,:,:), BJ, BE
     integer, intent(in)   :: L
     
-    real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
+    real(dp), allocatable :: dtheta_x(:,:), dtheta_y(:,:)
     integer               :: i, j, N
     
     ! initialize variables
-    allocate(dthetax(L,L),dthetay(L,L))
+    allocate(dtheta_x(L,L),dtheta_y(L,L))
     G = 0._dp
     N = L**2
     
     ! calculate angle difference between neighboring spins in x and y dirs
     do i=1,L
       do j=1,L
-        dthetax(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
-        dthetay(i,j) = angle(S(:,i,j)) - angle(S(:,i,modulo(j,L)+1))
+        dtheta_x(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
+        dtheta_y(i,j) = angle(S(:,i,j)) - angle(S(:,i,modulo(j,L)+1))
       enddo
     enddo
 
-    G = (-BE/BJ - BJ*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2))/(2._dp*N)
-    deallocate(dthetax,dthetay)
+    G = (-BE/BJ - BJ*(sum(sin(dtheta_x))**2 + sum(sin(dtheta_y))**2))/(2._dp*N)
+    deallocate(dtheta_x,dtheta_y)
   end subroutine
   
   pure function angle(S)

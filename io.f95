@@ -65,6 +65,7 @@ contains
       write(12,'(/,A,/)') '*******************************' 
     close(12)
     
+    ! append spin stiffness calculation result to file
     inquire(file='TvsHmod.dat',exist=exs)
     if (exs) then
       open(12,file ='TvsHmod.dat',status='old',position='append',&
