@@ -49,6 +49,11 @@ contains
     real(dp), intent(in) :: BJ, t(:), BE(:), h_mod, Chi
     integer, intent(in) :: runtime
 
+    character(30) :: rowfmt
+    logical       :: exs
+    
+    write(rowfmt, '(A)') '(F7.5,3X,F7.5)'
+
     open(12,access = 'sequential',file = 'output.txt')
       write(12,'(/,A,/)') '*********** Summary ***********' 
       write(12,*) "BJ :", BJ
@@ -60,6 +65,16 @@ contains
       write(12,'(/,A,/)') '*******************************' 
     close(12)
     
+    inquire(file='TvsHmod.dat',exist=exs)
+    if (exs) then
+      open(12,file ='TvsHmod.dat',status='old',position='append',&
+        action='write')
+    else 
+      open(12,file ='TvsHmod.dat',status='new',action='write')
+    endif
+      write(12,rowfmt) 1._dp/BJ, h_mod
+    close(12)
+
     call line_plot(real(t,dp),BE,'t','energy','','',1)
     call system('cat output.txt')
   end subroutine
