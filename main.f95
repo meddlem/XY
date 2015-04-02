@@ -6,22 +6,22 @@ program main
   implicit none
   
   ! variables:
-  ! J: coupling 
-  ! E: energy 
+  ! BJ: coupling 
+  ! BE: energy 
   ! L:  lattice side
   ! S:  array containing spins vectors indexed as row, column
 
-  real(dp), allocatable :: S(:,:,:), t(:), E 
-  real(dp)              :: J, h_mod, Chi
+  real(dp), allocatable :: S(:,:,:), t(:), BE(:)
+  real(dp)              :: BJ, h_mod, Chi
   integer               :: runtime, L
   
-  call user_in(J,L)
-  allocate(S(2,L,L),t(n_meas),E(n_meas))
+  call user_in(BJ,L)
+  allocate(S(2,L,L),t(n_meas),BE(n_meas))
   call init_random_seed()
   call init_lattice(L,S)
   
-  call run_sim(S,E,J,t,h_mod,Chi,runtime)
+  call run_sim(S,BE,BJ,t,h_mod,Chi,runtime)
   
-  call results_out(J,t,E,h_mod,Chi,runtime)
-  deallocate(S,t,E)
+  call results_out(BJ,t,BE,h_mod,Chi,runtime)
+  deallocate(S,t,BE)
 end program
