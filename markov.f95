@@ -27,7 +27,7 @@ contains
     do i=1,steps
       call gen_config(S,BK,N_SWC_tmp)
 
-      if (mod(i,meas_step) == 0) then
+      if (i>meas_start) then
         j = j+1
         N_SWC(j) = N_SWC_tmp
         call calc_energy(BE(j),S,BK)
@@ -190,14 +190,16 @@ contains
 
     do i=1,L
       do j=1,L
-        nn=nn_idx([i,j])
+        nn = nn_idx([i,j])
         dthetax(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
         dthetay(i,j) = angle(S(:,i,j)) - angle(S(:,i,modulo(j,L)+1))
+
         do k=1,4
           G = G + dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
         enddo
       enddo
     enddo
+    ! something here is wrong, check angle calc??
 
     G = 0.5_dp*G ! double counting correction
     G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
