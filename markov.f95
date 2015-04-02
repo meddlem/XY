@@ -1,20 +1,19 @@
 module markov 
   use constants
-  use main_routines
+  use proc_output
   use plotroutines
   implicit none
   private
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BJ,t,h_mod,Chi,runtime)
+  subroutine run_sim(S,BE,BJ,t,h_mod,h_mod_err,Chi,Chi_err,runtime)
     real(dp), intent(inout) :: S(:,:,:), t(:), BE(:), BJ
     integer, intent(out)    :: runtime
-    real(dp), intent(out)   :: Chi
+    real(dp), intent(out)   :: Chi, Chi_err, h_mod, h_mod_err
 
     real(dp), allocatable :: G(:)
     integer, allocatable  :: N_SWC(:)
-    real(dp)  :: h_mod
     integer   :: i, j, L, N, start_time, end_time, N_SWC_tmp
     
     allocate(G(n_meas),N_SWC(n_meas))
@@ -24,7 +23,7 @@ contains
     N = L**2
     t = real((/(i,i=0,n_meas-1)/),dp)
     
-    call animate_lattice(L)
+    call animate_lattice(S)
     call system_clock(start_time)
     do i=1,steps
       call gen_config(S,L,BJ,N_SWC_tmp)
@@ -44,8 +43,9 @@ contains
     call close_lattice_plot()
 
     runtime = (end_time - start_time)/1000 ! calculate runtime
-    Chi = sum(real(N_SWC,dp)/real(N,dp))/n_meas ! magnetic susc
-    h_mod = sum(G)/n_meas ! helicity modulus 
+    call calc_chi(N,N_SWC,Chi,Chi_err)
+    call calc_h_mod(G,h_mod,h_mod_err)
+    call line_plot(t,G,'','','','',2)
     deallocate(G,N_SWC)
   end subroutine
 

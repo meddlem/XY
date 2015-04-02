@@ -45,14 +45,15 @@ contains
 
   end subroutine
 
-  subroutine results_out(BJ,t,BE,h_mod,Chi,runtime) 
-    real(dp), intent(in) :: BJ, t(:), BE(:), h_mod, Chi
+  subroutine results_out(BJ,t,BE,h_mod,h_mod_err,Chi,Chi_err,runtime) 
+    real(dp), intent(in) :: BJ, t(:), BE(:), h_mod, h_mod_err, Chi, Chi_err
     integer, intent(in) :: runtime
 
-    character(30) :: rowfmt
+    character(30) :: rowfmt, output_form
     logical       :: exs
     
-    write(rowfmt, '(A)') '(F7.5,3X,F7.5)'
+    output_form = '(A,T25,F8.4,A,F8.4)'
+    rowfmt  = '(F7.5,3X,F7.5)'
 
     open(12,access = 'sequential',file = 'output.txt')
       write(12,'(/,A,/)') '*********** Summary ***********' 
@@ -60,8 +61,8 @@ contains
     
       write(12,'(/,A,/)') '*********** Output ************' 
       write(12,'(A,I6,A)') "Runtime : ", runtime, " s"
-      write(12,*) "Helicity modulus", h_mod
-      write(12,*) "Magnetic Susceptibility", Chi
+      write(12,output_form) "Helicity modulus:", h_mod, " ± ", h_mod_err
+      write(12,output_form) "Magnetic Susceptibility:", Chi, " ± ", Chi_err
       write(12,'(/,A,/)') '*******************************' 
     close(12)
     

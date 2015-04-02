@@ -1,5 +1,5 @@
 FC = gfortran
-FFLAGS = -ffast-math -Wall -march=native -O3 -fopenmp -mno-avx -fcheck=bounds #compiler flags
+FFLAGS = -ffast-math -Wall -march=native -O3 #compiler flags
 LDFLAGS = -fopenmp #link flags
 
 COMPILE = $(FC) $(FFLAGS)
@@ -11,7 +11,7 @@ PROG = main #program name
 OBJS =
 OBJS += constants.o
 OBJS += plotroutines.o
-OBJS += main_routines.o
+OBJS += proc_output.o
 OBJS += io.o
 OBJS += initialize.o
 OBJS += markov.o

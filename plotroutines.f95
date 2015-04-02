@@ -5,9 +5,10 @@ module plotroutines
   public :: line_plot, write_lattice, close_lattice_plot, animate_lattice
 
 contains
-  subroutine animate_lattice(L)
-    integer, intent(in) :: L
-    integer :: ret
+  subroutine animate_lattice(S)
+    real(dp), intent(in) :: S(:,:,:)
+    integer :: ret, L
+    L = size(S,2)
     
     ! creates fifo pipe: plotfifo.dat
     call system("rm -f plotfifo.dat; mkfifo plotfifo.dat",ret)     
