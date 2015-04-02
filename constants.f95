@@ -10,7 +10,7 @@ module constants
   integer, parameter :: lng = selected_int_kind(8)
   real(dp), parameter :: pi = 4._dp*atan(1._dp)
 
-  integer, parameter :: steps = 20000 
+  integer, parameter :: steps = 25000 
   integer, parameter :: meas_start = 5000 
   integer, parameter :: n_meas = steps - meas_start 
   integer, parameter :: plot_interval = 99 

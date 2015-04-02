@@ -60,7 +60,7 @@ contains
     integer, allocatable :: C(:,:)
     logical, allocatable :: in_cluster(:,:)
     integer   :: i, j, x(2), nn(4,2)
-    real(dp)  :: S_dot_u, u(2)
+    real(dp)  :: u(2)
     
     ! initialize variables 
     allocate(C(L**2,2),in_cluster(L**2,L**2))
@@ -76,41 +76,45 @@ contains
     in_cluster(x(1),x(2)) = .true. ! tag spin     
 
     S(:,x(1),x(2)) = Flip(S(:,x(1),x(2)),u) ! flip initial spin
-    S_dot_u = dot_product(S(:,x(1),x(2)),u) 
     
     do while (i<=N_SWC)
       x = C(i,:) ! pick a spin x in the cluster
       nn = nn_idx(x,L) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over nearest neighbors of x
-        call try_add(S,C,in_cluster,N_SWC,S_dot_u,u,nn(j,:),BJ)
+        call try_add(S,C,in_cluster,N_SWC,u,x,nn(j,:),BJ)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
     deallocate(C,in_cluster)
   end subroutine
 
-  subroutine try_add(S,C,in_cluster,N_SWC,S_dot_u,u,s_idx,BJ)
+  subroutine try_add(S,C,in_cluster,N_SWC,u,x,nn,BJ)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout)  :: N_SWC, C(:,:)
     logical, intent(inout)  :: in_cluster(:,:)
-    integer, intent(in)     :: s_idx(:)
-    real(dp), intent(in)    :: S_dot_u, BJ, u(:)
+    integer, intent(in)     :: nn(:), x(:)
+    real(dp), intent(in)    :: BJ, u(:)
 
-    integer   :: i, j 
-    real(dp)  :: r, p, Sy_dot_u
+    integer   :: i, j, i_0, j_0
+    real(dp)  :: r, p, S1_dot_u, S2_dot_u
+    
+    i_0 = x(1) 
+    j_0 = x(2)
 
-    i = s_idx(1)
-    j = s_idx(2)
+    i = nn(1)
+    j = nn(2)
     
     if (.not. in_cluster(i,j)) then ! check if spin already visited 
       call random_number(r)
-      Sy_dot_u = dot_product(S(:,i,j),u)
-      p = 1 - exp(min(2._dp*BJ*S_dot_u*Sy_dot_u,0._dp))
+      ! wat je hier doet klopt niet, je moet de inproducten van de nearest neighbors met u met elkaar vermendigvuldingen
+      S1_dot_u = dot_product(S(:,i_0,j_0),u)
+      S2_dot_u = dot_product(S(:,i,j),u)
+      p = 1 - exp(2._dp*BJ*S1_dot_u*S2_dot_u)
 
       if (r<p) then ! add spin to cluster with probability p
         N_SWC = N_SWC+1 ! increase nr of spins in cluster
-        C(N_SWC,:) = s_idx ! add to cluster
+        C(N_SWC,:) = [i,j] ! add to cluster
         in_cluster(i,j) = .true. ! only check each bond once or multiple times?
 
         S(:,i,j) = Flip(S(:,i,j),u) ! flip spin 
@@ -206,7 +210,7 @@ contains
       enddo
     enddo
 
-    G = -BE/(2._dp*BJ*L**2) ! double counting correction
+    G = -BE/(2._dp*BJ*L**2) 
     G = G - BJ*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)/(2._dp*L**2)
     deallocate(dthetax,dthetay)
   end subroutine
