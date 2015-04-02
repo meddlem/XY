@@ -46,7 +46,7 @@ contains
     ! calculate runtime
     runtime = (end_time - start_time)/1000
     
-    Chi = sum(real(N_SWC,dp)**2/real(N,dp)**2)/n_meas ! magnetic susc
+    Chi = sum(real(N_SWC,dp)/real(N,dp))/n_meas ! magnetic susc
     h_mod = sum(G)/n_meas ! helicity modulus 
     deallocate(G,N_SWC)
   end subroutine
@@ -59,7 +59,7 @@ contains
 
     integer, allocatable :: C(:,:)
     logical, allocatable :: in_cluster(:,:)
-    integer   :: i, j, x(2), nn(4,2)
+    integer   :: i, j, ss(2), nn(4,2)
     real(dp)  :: u(2)
     
     ! initialize variables 
@@ -69,78 +69,88 @@ contains
     i = 1 ! labels for spin in cluster
     N_SWC = 1 ! number of spins in cluster
 
-    call random_idx(x,L) ! start cluster by choosing 1 spin
+    call random_idx(ss,L) ! start cluster by choosing 1 spin
     call random_dir(u) ! get random unit vector
 
-    C(1,:) = x ! add chosen spin to cluster  
-    in_cluster(x(1),x(2)) = .true. ! tag spin     
+    C(1,:) = ss ! add chosen spin to cluster  
+    in_cluster(ss(1),ss(2)) = .true. ! tag spin     
 
-    S(:,x(1),x(2)) = Flip(S(:,x(1),x(2)),u) ! flip initial spin
+    call flip(S,ss(1),ss(2),u) ! flip initial spin
     
     do while (i<=N_SWC)
-      x = C(i,:) ! pick a spin x in the cluster
-      nn = nn_idx(x,L) ! get nearest neighbors of spin x
+      ss = C(i,:) ! pick a spin x in the cluster
+      nn = get_nn_idx(ss,L) ! get nearest neighbors of spin ss
       
-      do j = 1,4 ! iterate over nearest neighbors of x
-        call try_add(S,C,in_cluster,N_SWC,u,x,nn(j,:),BJ)
+      do j = 1,4 ! iterate over nearest neighbors of ss
+        call try_add(S,C,in_cluster,N_SWC,u,ss,nn(j,:),BJ)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
     deallocate(C,in_cluster)
   end subroutine
 
-  subroutine try_add(S,C,in_cluster,N_SWC,u,x,nn,BJ)
+  subroutine try_add(S,C,in_cluster,N_SWC,u,ss,nn,BJ)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout)  :: N_SWC, C(:,:)
     logical, intent(inout)  :: in_cluster(:,:)
-    integer, intent(in)     :: nn(:), x(:)
+    integer, intent(in)     :: nn(:), ss(:)
     real(dp), intent(in)    :: BJ, u(:)
 
     integer   :: i, j, i_0, j_0
     real(dp)  :: r, p, S1_dot_u, S2_dot_u
     
-    i_0 = x(1) 
-    j_0 = x(2)
+    ! initial spin lattice coords
+    i_0 = ss(1) 
+    j_0 = ss(2)
 
+    ! neigbor spin
     i = nn(1)
     j = nn(2)
     
     if (.not. in_cluster(i,j)) then ! check if spin already visited 
       call random_number(r)
-      ! wat je hier doet klopt niet, je moet de inproducten van de nearest neighbors met u met elkaar vermendigvuldingen
       S1_dot_u = dot_product(S(:,i_0,j_0),u)
       S2_dot_u = dot_product(S(:,i,j),u)
       p = 1 - exp(2._dp*BJ*S1_dot_u*S2_dot_u)
 
       if (r<p) then ! add spin to cluster with probability p
         N_SWC = N_SWC+1 ! increase nr of spins in cluster
-        C(N_SWC,:) = [i,j] ! add to cluster
-        in_cluster(i,j) = .true. ! only check each bond once or multiple times?
+        
+        ! add to cluster
+        C(N_SWC,:) = [i,j] 
+        in_cluster(i,j) = .true. 
 
-        S(:,i,j) = Flip(S(:,i,j),u) ! flip spin 
+        call flip(S,i,j,u) 
       endif
     endif
   end subroutine
 
-  pure function nn_idx(x,L)
+  pure function get_nn_idx(x,L)
     ! returns indices of nearest neighbors of x_ij, accounting for PBC
     integer, intent(in) :: x(2), L
-    integer :: nn_idx(4,2)
+    integer :: get_nn_idx(4,2)
 
-    nn_idx(1,:) = merge(x + [1,0], [1,x(2)], x(1) /= L)
-    nn_idx(2,:) = merge(x + [0,1], [x(1),1], x(2) /= L) 
-    nn_idx(3,:) = merge(x - [1,0], [L,x(2)], x(1) /= 1) 
-    nn_idx(4,:) = merge(x - [0,1], [x(1),L], x(2) /= 1) 
+    get_nn_idx(1,:) = merge(x + [1,0], [1,x(2)], x(1) /= L)
+    get_nn_idx(2,:) = merge(x + [0,1], [x(1),1], x(2) /= L) 
+    get_nn_idx(3,:) = merge(x - [1,0], [L,x(2)], x(1) /= 1) 
+    get_nn_idx(4,:) = merge(x - [0,1], [x(1),L], x(2) /= 1) 
   end function
 
-  pure function Flip(S,u)
-    ! flips spin wrt unit vector u
-    real(dp), intent(in) :: S(:), u(:)
-    real(dp) :: Flip(2)
+  pure subroutine flip(S,i,j,u)
+    ! flips spin S(i,j) wrt unit vector u
+    real(dp), intent(inout) :: S(:,:,:)
+    real(dp), intent(in)    :: u(:)
+    integer, intent(in)     :: i, j
+
+    real(dp) :: S_tmp(2)
     
-    Flip = S - 2._dp*dot_product(S,u)*u  
-    Flip = Flip/sqrt(sum(Flip**2)) ! ensure normalization of spins   
-  end function
+    S_tmp = S(:,i,j) 
+    
+    S_tmp = S_tmp - 2._dp*dot_product(S_tmp,u)*u  
+    S_tmp = S_tmp/sqrt(sum(S_tmp**2)) ! ensure normalization of spins   
+    
+    S(:,i,j) = S_tmp
+  end subroutine
   
   subroutine random_idx(x,L)
     ! returns index of randomly picked spin
@@ -150,7 +160,7 @@ contains
 
     call random_number(u)
     u = (L-1)*u + 1
-    x = int(u) ! index of spin to flip
+    x = int(u) 
   end subroutine
 
   subroutine random_dir(r)
@@ -163,14 +173,6 @@ contains
     r = [cos(u),sin(u)]
   end subroutine
   
-  pure function angle(S)
-    real(dp), intent(in) :: S(:)
-    real(dp)             :: angle
-    ! convert spin vector to angle wrt x-axis
-    
-    angle = atan2(S(2),S(1)) 
-  end function
-
   pure subroutine calc_energy(BE,S,L,BJ)
     ! calculate energy of the system
     real(dp), intent(out) :: BE
@@ -182,7 +184,7 @@ contains
 
     do i = 1,L
       do j = 1,L
-        nn = nn_idx([i,j],L) ! get nearest neighbors of spin i,j
+        nn = get_nn_idx([i,j],L) 
         do k = 1,4
           BE = BE - BJ*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
         enddo
@@ -193,16 +195,20 @@ contains
   end subroutine
 
   pure subroutine helicity_mod(G,S,L,BE,BJ)
+    ! calculates helicity modulus/spin wave stifness
     real(dp), intent(out) :: G
     real(dp), intent(in)  :: S(:,:,:), BJ, BE
     integer, intent(in)   :: L
     
     real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
-    integer               :: i, j
-
+    integer               :: i, j, N
+    
+    ! initialize variables
     allocate(dthetax(L,L),dthetay(L,L))
     G = 0._dp
-
+    N = L**2
+    
+    ! calculate angle difference between neighboring spins in x and y dirs
     do i=1,L
       do j=1,L
         dthetax(i,j) = angle(S(:,i,j)) - angle(S(:,modulo(i,L)+1,j))
@@ -210,8 +216,14 @@ contains
       enddo
     enddo
 
-    G = -BE/(2._dp*BJ*L**2) 
-    G = G - BJ*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)/(2._dp*L**2)
+    G = (-BE/BJ - BJ*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2))/(2._dp*N)
     deallocate(dthetax,dthetay)
   end subroutine
+  
+  pure function angle(S)
+    real(dp), intent(in) :: S(:)
+    real(dp)             :: angle
+    ! convert spin vector to angle wrt x-axis
+    angle = atan2(S(2),S(1)) 
+  end function
 end module

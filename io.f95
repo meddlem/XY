@@ -3,22 +3,46 @@ module io
   use plotroutines
   implicit none
   private
-  public :: user_in, results_out
+  public :: get_usr_args, user_in, results_out
 contains
 
-  subroutine user_in(BJ,L)
+  subroutine get_usr_args(use_T)
+    logical, intent(out) :: use_T
+    
+    character(10) :: arg
+    integer       :: i
+
+    use_T = .false. ! by default use betaJ for input
+    
+    do i=1,iargc()
+      call getarg(i,arg)
+      if (trim(arg) == '-T') then
+        use_T = .true.
+      endif
+    enddo
+  end subroutine
+
+  subroutine user_in(BJ,L,use_T)
     real(dp), intent(out) :: BJ
     integer, intent(out)  :: L
+    logical, intent(in)   :: use_T
+
     real(dp) :: T
   
     write(*,'(/,A,/)') '************ Input *************' 
-    write(*,'(A)',advance='no') "T = " 
-    read(*,*) T
+    if (use_T) then
+      write(*,'(A)',advance='no') "T = " 
+      read(*,*) T
+      BJ = 1._dp/T
+    else
+      write(*,'(A)',advance='no') "BJ = " 
+      read(*,*) BJ
+    endif
+
     write(*,'(A)',advance='no') "L = " 
     read(*,*) L
     write(*,'(A)') "Running simulation..."
 
-    BJ = 1._dp/T
   end subroutine
 
   subroutine results_out(BJ,t,BE,h_mod,Chi,runtime) 
