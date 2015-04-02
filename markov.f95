@@ -7,8 +7,8 @@ module markov
   public :: run_sim
 
 contains
-  subroutine run_sim(S,BE,BK,t,h_mod,Chi,runtime)
-    real(dp), intent(inout) :: S(:,:,:), t(:), BE(:), BK
+  subroutine run_sim(S,E,J,t,h_mod,Chi,runtime)
+    real(dp), intent(inout) :: S(:,:,:), t(:), E(:), J
     integer, intent(out)    :: runtime
     real(dp), intent(out)   :: Chi
 
@@ -27,13 +27,13 @@ contains
     call animate_lattice(L)
     call system_clock(start_time)
     do i=1,steps
-      call gen_config(S,L,BK,N_SWC_tmp)
+      call gen_config(S,L,J,N_SWC_tmp)
 
       if (i>meas_start) then
         j = j+1
         N_SWC(j) = N_SWC_tmp
-        call calc_energy(BE(j),S,L,BK)
-        call helicity_mod(G(j),S,L,BK)
+        call calc_energy(E(j),S,L,J)
+        call helicity_mod(G(j),S,L,J)
       endif
   
       if (mod(i,plot_interval) == 0) then
@@ -46,16 +46,16 @@ contains
     ! calculate runtime
     runtime = (end_time - start_time)/1000
     
-    Chi = sum(real(N_SWC,dp)**2/real(N,dp)**2)/n_meas ! magnetic susceptibility
+    Chi = sum(real(N_SWC,dp)**2/real(N,dp)**2)/n_meas ! magnetic susc
     h_mod = sum(G)/n_meas ! helicity modulus 
     deallocate(G,N_SWC)
   end subroutine
 
-  subroutine gen_config(S,L,BK,N_SWC)
+  subroutine gen_config(S,L,J,N_SWC)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(out)    :: N_SWC
     integer, intent(in)     :: L
-    real(dp), intent(in)    :: BK
+    real(dp), intent(in)    :: J
 
     integer, allocatable :: C(:,:)
     logical, allocatable :: C_added(:,:)
@@ -83,19 +83,19 @@ contains
       nn = nn_idx(x,L) ! get nearest neighbors of spin x
       
       do j = 1,4 ! iterate over nearest neighbors of x
-        call try_add(S,C,C_added,N_SWC,S_dot_u,u,nn(j,:),BK)
+        call try_add(S,C,C_added,N_SWC,S_dot_u,u,nn(j,:),J)
       enddo
       i = i+1 ! move to next spin in cluster
     enddo
     deallocate(C,C_added)
   end subroutine
 
-  subroutine try_add(S,C,C_added,N_SWC,S_dot_u,u,s_idx,BK)
+  subroutine try_add(S,C,C_added,N_SWC,S_dot_u,u,s_idx,J)
     real(dp), intent(inout) :: S(:,:,:)
     integer, intent(inout)  :: N_SWC, C(:,:)
     logical, intent(inout)  :: C_added(:,:)
     integer, intent(in)     :: s_idx(:)
-    real(dp), intent(in)    :: S_dot_u, BK, u(:)
+    real(dp), intent(in)    :: S_dot_u, J, u(:)
 
     integer   :: i, j 
     real(dp)  :: r, p, Sy_dot_u
@@ -106,7 +106,7 @@ contains
     if (C_added(i,j) .eqv. .false.) then ! check if spin already in C
       call random_number(r)
       Sy_dot_u = dot_product(S(:,i,j),u)
-      p = 1 - exp(2*BK*S_dot_u*Sy_dot_u)  
+      p = 1 - exp(2*J*S_dot_u*Sy_dot_u)  
 
       if (r<p) then ! add spin to cluster with probability p
         N_SWC = N_SWC+1 ! increase nr of spins in cluster
@@ -145,8 +145,8 @@ contains
     real(dp) :: u(2)
 
     call random_number(u)
-    u = L*u + 0.5_dp
-    x = nint(u) ! index of spin to flip
+    u = (L-1)*u + 1
+    x = int(u) ! index of spin to flip
   end subroutine
 
   subroutine random_dir(r)
@@ -167,38 +167,37 @@ contains
     angle = atan2(S(2),S(1)) 
   end function
 
-  pure subroutine calc_energy(BE,S,L,BK)
+  pure subroutine calc_energy(E,S,L,J)
     ! calculate energy of the system
-    real(dp), intent(out) :: BE
-    real(dp), intent(in)  :: S(:,:,:), BK
+    real(dp), intent(out) :: E
+    real(dp), intent(in)  :: S(:,:,:), J
     integer, intent(in)   :: L
     integer               :: i, j, k, nn(4,2)
     
-    BE = 0._dp ! init energy 
+    E = 0._dp ! init energy 
 
     do i = 1,L
       do j = 1,L
         nn = nn_idx([i,j],L) ! get nearest neighbors of spin i,j
         do k = 1,4
-          BE = BE - BK*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
+          E = E - J*dot_product(S(:,i,j),S(:,nn(k,1),nn(k,2)))
         enddo
       enddo
     enddo
 
-    BE = 0.5_dp*BE ! correct for double counting of pairs
+    E = 0.5_dp*E ! correct for double counting of pairs
   end subroutine
 
-  pure subroutine helicity_mod(G,S,L,BK)
+  pure subroutine helicity_mod(G,S,L,J,T)
     real(dp), intent(out) :: G
-    real(dp), intent(in)  :: S(:,:,:), BK
+    real(dp), intent(in)  :: S(:,:,:), J, T
     integer, intent(in)   :: L
     
     real(dp), allocatable :: dthetax(:,:), dthetay(:,:)
-    integer               :: i, j, k, N, nn(4,2)
+    integer               :: i, j, k, nn(4,2)
 
     allocate(dthetax(L,L),dthetay(L,L))
     G = 0._dp
-    N = L**2
 
     do i=1,L
       do j=1,L
@@ -212,8 +211,8 @@ contains
     enddo
 
     G = 0.5_dp*G ! double counting correction
-    G = G - BK*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
-    G = G/(2._dp*N)
+    G = G - J/T*(sum(sin(dthetax))**2 + sum(sin(dthetay))**2)
+    G = G/(2._dp*L**2)
     deallocate(dthetax,dthetay)
   end subroutine
 end module
