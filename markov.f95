@@ -36,7 +36,7 @@ contains
       endif
   
       if (mod(i,plot_interval) == 0) then
-        call write_lattice(S,L) ! lattice to pipe
+        call write_lattice(S,L) ! write lattice to pipe
       endif
     enddo    
     call system_clock(end_time)
